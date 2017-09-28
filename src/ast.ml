@@ -122,33 +122,37 @@ module ExpAst(Var_ : VarAstSig) = struct
     | LFalse                                              (* true *)
 
 
-  let map_stxs f = List.map (fun s -> f s.pos s.a)
-
-  let typ_map f = function
-    | TCon (d, ts) -> TCon (d, map_stxs f ts)
+  let typ_map f_ =
+    let f e = { pos = e.pos; a = f_ e.pos e.a } in
+    function
+    | TCon (d, ts) -> TCon (d, List.map f ts)
     | atom -> atom
 
-  let exp_map f = function
-    | EAnno (e,t) -> EAnno(f e.pos e.a, t)
-    | ERef e -> ERef (f e.pos e.a)
-    | EMove e -> EMove (f e.pos e.a)
-    | EField (e,x) -> EField (f e.pos e.a, x)
-    | EApp (e, es) -> EApp (f e.pos e.a, map_stxs f es)
-    | ECons (c, es) -> ECons (c, map_stxs f es)
-    | ERecord (r, flds) -> ERecord (r, List.map (fun (k, e) -> (k, f e.pos e.a)) flds)
-    | ELet (p, e1, e2) -> ELet (p, f e1.pos e1.a, f e2.pos e2.a)
-    | ELam (xs, e) -> ELam (xs, f e.pos e.a)
-    | ELamAnno (xs, e) -> ELamAnno (xs, f e.pos e.a)
-    | EIf (e1, e2, e3) -> EIf (f e1.pos e1.a, f e2.pos e2.a, Option.map (fun e -> f e.pos e.a) e3)
-    | EWhile (ec, eb) -> EWhile (f ec.pos ec.a, f eb.pos eb.a)
-    | EReturn e -> EReturn (f e.pos e.a)
-    | EMatch (e, cs) -> EMatch (f e.pos e.a, List.map (fun (p, e) -> (p, f e.pos e.a)) cs)
+  let exp_map f_ =
+    let f e = { pos = e.pos; a = f_ e.pos e.a } in
+    function
+    | EAnno (e,t) -> EAnno(f e, t)
+    | ERef e -> ERef (f e)
+    | EMove e -> EMove (f e)
+    | EField (e,x) -> EField (f e, x)
+    | EApp (e, es) -> EApp (f e, List.map f es)
+    | ECons (c, es) -> ECons (c, List.map f es)
+    | ERecord (r, flds) -> ERecord (r, List.map (fun (k, e) -> (k, f e)) flds)
+    | ELet (p, e1, e2) -> ELet (p, f e1, f e2)
+    | ELam (xs, e) -> ELam (xs, f e)
+    | ELamAnno (xs, e) -> ELamAnno (xs, f e)
+    | EIf (e1, e2, e3) -> EIf (f e1, f e2, Option.map (fun e -> f e) e3)
+    | EWhile (ec, eb) -> EWhile (f ec, f eb)
+    | EReturn e -> EReturn (f e)
+    | EMatch (e, cs) -> EMatch (f e, List.map (fun (p, e) -> (p, f e)) cs)
     | atom -> atom
 
-  let pat_map f = function
-    | PRef p -> PRef (f p.pos p.a)
-    | PCons (c, ps) -> PCons (c, map_stxs f ps)
-    | PRecord (c, flds) -> PRecord (c, List.map (fun (k, p) -> (k, f p.pos p.a)) flds)
+  let pat_map f_ =
+    let f e = { pos = e.pos; a = f_ e.pos e.a } in
+    function
+    | PRef p -> PRef (f p)
+    | PCons (c, ps) -> PCons (c, List.map f ps)
+    | PRecord (c, flds) -> PRecord (c, List.map (fun (k, p) -> (k, f p)) flds)
     | atom -> atom
 
 end

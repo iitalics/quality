@@ -18,7 +18,7 @@ and toplevel =
   | TLTypeDefn of ident * generics * type_defn stx     (* type d<X, ...> = *)
   | TLAnno of string * generics * typ stx              (* x : t *)
   | TLDefn of string * expr stx                        (* x = e *)
-  | TLExtern of ident * ident                          (* extern x = f *)
+  | TLExtern of ident * ident * typ stx                (* extern x = f : t *)
 
 and generics = ident list (* <X, ...> *)
 

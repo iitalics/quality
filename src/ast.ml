@@ -25,8 +25,8 @@ module type ExpAstSig = sig
 
   (** map the subexpressions/types/patterns in the expression.
       calls the given function on each expression _within_ the given type *)
-  val exp_map : (pos -> exp -> exp) -> exp -> exp
-  val pat_map : (pos -> pat -> pat) -> pat -> pat
+  val exp_map : (exp stx -> exp stx) -> exp -> exp
+  val pat_map : (pat stx -> pat stx) -> pat -> pat
 end
 
 (** module signature for variables *)
@@ -71,33 +71,33 @@ module ExpAst(Var_ : VarAstSig) = struct
 
   (* types *)
   type typ =
-    | TCon of string                                      (* d *)
-    | TVar of Var.t                                       (* X *)
+    | TCon of string                                     (* d *)
+    | TVar of Var.t                                      (* X *)
 
   (* expressions *)
   and exp =
     (* atomic forms *)
-    | ELit of literal                                     (* c *)
-    | EVar of Var.t                                       (* x *)
+    | ELit of literal                                    (* c *)
+    | EVar of Var.t                                      (* x *)
     (* simple recursive forms *)
     | EAnno of exp stx * typ stx                         (* (e : t) *)
     | ERef of exp stx                                    (* &x *)
     | EMove of exp stx                                   (* *x *)
     | EField of exp stx * string stx                     (* x.y *)
-    | EApp of exp stx * exp stx list                    (* f(e, ...) *)
+    | EApp of exp stx * exp stx list                     (* f(e, ...) *)
     | ECons of string * exp stx list                     (* @C(e, ...) *)
     | ERecord of string * (string stx * exp stx) list    (* R { x=e, ... } *)
     (* variable-introducing forms *)
-    | ELet of pat stx * exp stx * exp stx              (* let p = e; e *)
-    | ELetVar of Var.t stx * exp stx * exp stx          (* var x = e; e *)
+    | ELet of pat stx * exp stx * exp stx                (* let p = e; e *)
+    | ELetVar of Var.t stx * exp stx * exp stx           (* var x = e; e *)
     | ELam of Var.t stx list * exp stx                   (* {x, ... -> e} *)
     | ELamAnno of (Var.t stx * typ stx) list * exp stx   (* {x:t, ... -> e} *)
     (* control flow expressions *)
-    | EIf of exp stx * exp stx * exp stx option        (* if e then e [else e] *)
-    | EWhile of exp stx * exp stx                       (* while e: e *)
+    | EIf of exp stx * exp stx * exp stx option          (* if e then e [else e] *)
+    | EWhile of exp stx * exp stx                        (* while e: e *)
     | EReturn of exp stx                                 (* return e *)
     (* pattern matching *)
-    | EMatch of exp stx * (pat stx * exp stx) list      (* match e: p -> e | ... *)
+    | EMatch of exp stx * (pat stx * exp stx) list       (* match e: p -> e | ... *)
 
   (* patterns *)
   and pat =
@@ -119,8 +119,7 @@ module ExpAst(Var_ : VarAstSig) = struct
     | LFalse                                              (* true *)
 
 
-  let exp_map f_ =
-    let f e = { pos = e.pos; a = f_ e.pos e.a } in
+  let exp_map f =
     function
     | EAnno (e,t) -> EAnno(f e, t)
     | ERef e -> ERef (f e)
@@ -138,8 +137,7 @@ module ExpAst(Var_ : VarAstSig) = struct
     | EMatch (e, cs) -> EMatch (f e, List.map (fun (p, e) -> (p, f e)) cs)
     | atom -> atom
 
-  let pat_map f_ =
-    let f e = { pos = e.pos; a = f_ e.pos e.a } in
+  let pat_map f =
     function
     | PRef p -> PRef (f p)
     | PCons (c, ps) -> PCons (c, List.map f ps)

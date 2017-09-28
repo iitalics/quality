@@ -25,7 +25,6 @@ module type ExpAstSig = sig
 
   (** map the subexpressions/types/patterns in the expression.
       calls the given function on each expression _within_ the given type *)
-  val typ_map : (pos -> typ -> typ) -> typ -> typ
   val exp_map : (pos -> exp -> exp) -> exp -> exp
   val pat_map : (pos -> pat -> pat) -> pat -> pat
 end
@@ -49,12 +48,10 @@ module ToplevelAst(Exp_ : ExpAstSig) = struct
 
   (* toplevel definition type *)
   and toplevel =
-    | TLTypeDefn of string stx * generics * type_defn stx  (* type d<X, ...> = *)
-    | TLAnno of string stx * generics * typ stx            (* x : t *)
+    | TLTypeDefn of string * type_defn stx  (* type d<X, ...> = *)
+    | TLAnno of string stx * typ stx            (* x : t *)
     | TLDefn of string stx * exp stx                      (* x = e *)
     | TLExtern of string stx * string stx * typ stx        (* extern x = f : t *)
-
-  and generics = string stx list (* <X, ...> *)
 
   and type_defn =
     | Record of field list
@@ -74,7 +71,7 @@ module ExpAst(Var_ : VarAstSig) = struct
 
   (* types *)
   type typ =
-    | TCon of string * typ stx list                       (* d / d<t, ...> *)
+    | TCon of string                                      (* d *)
     | TVar of Var.t                                       (* X *)
 
   (* expressions *)
@@ -122,12 +119,6 @@ module ExpAst(Var_ : VarAstSig) = struct
     | LFalse                                              (* true *)
 
 
-  let typ_map f_ =
-    let f e = { pos = e.pos; a = f_ e.pos e.a } in
-    function
-    | TCon (d, ts) -> TCon (d, List.map f ts)
-    | atom -> atom
-
   let exp_map f_ =
     let f e = { pos = e.pos; a = f_ e.pos e.a } in
     function
@@ -173,7 +164,6 @@ let pi_defn =
   let open RawExp in
   TLDefn (stx nopos "pi",
           stx nopos (ELit (LFloat 3.14159)))
-
 
 
 (** scoped variables, which have a number to distinguish them *)

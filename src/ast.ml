@@ -122,27 +122,27 @@ module ExpAst(Var_ : VarAstSig) = struct
 
   let exp_map f =
     function
-    | EAnno (e,t) -> EAnno(f e, t)
-    | ERef e -> ERef (f e)
-    | EMove e -> EMove (f e)
-    | EField (e,x) -> EField (f e, x)
-    | EApp (e, es) -> EApp (f e, List.map f es)
-    | ECons (c, es) -> ECons (c, List.map f es)
-    | ERecord (r, flds) -> ERecord (r, List.map (fun (k, e) -> (k, f e)) flds)
-    | ELet (p, e1, e2) -> ELet (p, f e1, f e2)
-    | ELam (xs, e) -> ELam (xs, f e)
-    | ELamAnno (xs, e) -> ELamAnno (xs, f e)
-    | EIf (e1, e2, e3) -> EIf (f e1, f e2, Option.map (fun e -> f e) e3)
-    | EWhile (ec, eb) -> EWhile (f ec, f eb)
-    | EReturn e -> EReturn (f e)
-    | EMatch (e, cs) -> EMatch (f e, List.map (fun (p, e) -> (p, f e)) cs)
+    | EAnno (e,t)         -> EAnno(f e, t)
+    | ERef e              -> ERef (f e)
+    | EMove e             -> EMove (f e)
+    | EField (e,x)        -> EField (f e, x)
+    | EApp (e, es)        -> EApp (f e, List.map f es)
+    | ECons (c, es)       -> ECons (c, List.map f es)
+    | ERecord (r, flds)   -> ERecord (r, List.map (fun (k, e) -> (k, f e)) flds)
+    | ELet (p, e1, e2)    -> ELet (p, f e1, f e2)
+    | ELam (xs, e)        -> ELam (xs, f e)
+    | ELamAnno (xs, e)    -> ELamAnno (xs, f e)
+    | EIf (e1, e2, e3)    -> EIf (f e1, f e2, Option.map (fun e -> f e) e3)
+    | EWhile (ec, eb)     -> EWhile (f ec, f eb)
+    | EReturn e           -> EReturn (f e)
+    | EMatch (e, cs)      -> EMatch (f e, List.map (fun (p, e) -> (p, f e)) cs)
     | atom -> atom
 
   let pat_map f =
     function
-    | PRef p -> PRef (f p)
-    | PCons (c, ps) -> PCons (c, List.map f ps)
-    | PRecord (c, flds) -> PRecord (c, List.map (fun (k, p) -> (k, f p)) flds)
+    | PRef p              -> PRef (f p)
+    | PCons (c, ps)       -> PCons (c, List.map f ps)
+    | PRecord (c, flds)   -> PRecord (c, List.map (fun (k, p) -> (k, f p)) flds)
     | atom -> atom
 
 end

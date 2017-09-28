@@ -22,6 +22,7 @@ module type ExpAstSig = sig
   type typ
   type exp
   type pat
+  type var
 
   (** map the subexpressions/types/patterns in the expression.
       calls the given function on each expression _within_ the given type *)
@@ -163,7 +164,6 @@ let pi_defn =
   TLDefn (stx nopos "pi",
           stx nopos (ELit (LFloat 3.14159)))
 
-
 (** scoped variables, which have a number to distinguish them *)
 module ScopedVar = struct
   type t = string * int
@@ -172,7 +172,7 @@ module ScopedVar = struct
   let equal (_,i) (_,j) = (i = j)
 
   (* generate a fresh identifier with the given name *)
-  let fresh =
+  let fresh : string -> t =
     let next_id = ref 0 in
     (fun x ->
       let id = !next_id in
@@ -181,3 +181,12 @@ module ScopedVar = struct
 end
 
 module ScopedExp = ExpAst(ScopedVar)
+
+let f =
+  let open ScopedExp in
+  let open ScopedVar in
+  let x' = fresh "x" in
+  ELetVar
+    (stx nopos x',
+     stx nopos (ELit (LInt 3)),
+     stx nopos (EVar x'))

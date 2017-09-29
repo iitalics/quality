@@ -28,24 +28,10 @@ and ('var, 'nfo) exp
   | E_App of 'nfo * ('var, 'nfo) exp stx * ('var, 'nfo) exp
   | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
   (* binding *)
-  | E_Let of ('var, 'nfo) pat stx * ('var, 'nfo) exp * ('var, 'nfo) exp
-  | E_Match of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) match_case list
+  | E_Let of string stx * ('var, 'nfo) exp * ('var, 'nfo) exp
 
 and ('var, 'nfo) path
   = Var of 'var
   | Field of ('var, 'nfo) exp stx * string stx
-
-and ('var, 'nfo) match_case
-  = Case of ('var, 'nfo) pat stx * ('var, 'nfo) exp stx
-
-(** Patterns **)
-and ('var, 'nfo) pat
-  (* atoms *)
-  = P_Lit of lit
-  | P_Var of 'var
-  | P_Hole
-  (* recursive *)
-  | P_Ref of ('var, 'nfo) pat stx
-  | P_Record of 'nfo * string stx * ('var, 'nfo) pat stx list
 
 and lit = L_Unit | L_True | L_False | L_Int of int

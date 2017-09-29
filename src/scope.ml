@@ -23,9 +23,9 @@ module Ident = struct
 
   (** compare if two identifiers are equal **)
   let equal a b = match (a,b) with
-    | (FV x, FV y)         -> x = y
-    | (BV (_,i), BV (_,j)) -> i = j
-    | (_,_) -> false
+    | FV x, FV y         -> x = y
+    | BV (_,i), BV (_,j) -> i = j
+    | _, _ -> false
 
   (** string representation of identifier (omits discriminator **)
   let to_string = function

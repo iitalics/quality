@@ -22,10 +22,16 @@ module Ident = struct
   let gen x = BV (x, gen_discrim ())
 
   (** compare if two identifiers are equal **)
-  let equal a b = match (a,b) with
+  let equal a b =
+    match (a,b) with
     | FV x, FV y         -> x = y
     | BV (_,i), BV (_,j) -> i = j
     | _, _ -> false
+
+  let hash = function
+    | FV x     -> Hashtbl.hash x
+    | BV (_,i) -> i
+
 
   (** string representation of identifier (omits discriminator **)
   let to_string = function
@@ -39,8 +45,8 @@ type id = Ident.t
 
 
 module Resolve = struct
-
   open Ast
+
 
   let typ_resolve = function
     | pos, T_Named s -> pos, T_Named s
@@ -61,11 +67,19 @@ module Resolve = struct
        pos, E_Do (exp_resolve ctx e_1,
                   exp_resolve ctx e_2)
 
-    | pos, E_Let (x, e_rhs, e_body) ->
+    | pos, E_Let ((x_pos, x), e_rhs, e_body) ->
        let e_rhs' = exp_resolve ctx e_rhs in
        let x' = Ident.gen x in
        let e_body' = exp_resolve ((x,x')::ctx) e_body in
-       pos, E_Let (x', e_rhs', e_body')
+       pos, E_Let ((x_pos, x'), e_rhs', e_body')
+
+    | pos, E_Lam (pos_xs, e_body) ->
+       let (poss, xs) = List.split pos_xs in
+       let xs' = List.map Ident.gen xs in
+       let e_body' = exp_resolve
+                       (List.append (List.combine xs xs') ctx)
+                       e_body in
+       pos, E_Lam (List.combine poss xs', e_body')
 
 
   and path_resolve ctx = function
@@ -86,6 +100,5 @@ module Resolve = struct
 
     | TL_Record name ->
        TL_Record name
-
 
 end

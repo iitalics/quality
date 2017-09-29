@@ -28,7 +28,8 @@ and ('var, 'nfo) exp
   | E_App of 'nfo * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx list
   | E_Do of ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
   (* binding *)
-  | E_Let of 'var * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
+  | E_Let of 'var stx * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
+  | E_Lam of 'var stx list * ('var, 'nfo) exp stx
 
 and ('var, 'nfo) path = 'var
 

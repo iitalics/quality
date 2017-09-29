@@ -1,1 +1,1 @@
-<src/**/*>: package(batteries), package(oUnit)
+<src/**/*>: package(batteries)

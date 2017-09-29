@@ -30,9 +30,7 @@ and ('var, 'nfo) exp
   (* binding *)
   | E_Let of 'var * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
 
-and ('var, 'nfo) path
-  = Var of 'var
-  | Field of ('var, 'nfo) exp stx * string stx
+and ('var, 'nfo) path = 'var
 
 and lit = L_Unit | L_True | L_False | L_Int of int
 

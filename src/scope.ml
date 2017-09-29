@@ -41,7 +41,6 @@ type id = Ident.t
 module Resolve = struct
 
   open Ast
-  type context = (string, Ident.t) Map.t
 
   let typ_resolve = function
     | pos, T_Named s -> pos, T_Named s
@@ -65,20 +64,17 @@ module Resolve = struct
     | pos, E_Let (x, e_rhs, e_body) ->
        let e_rhs' = exp_resolve ctx e_rhs in
        let x' = Ident.gen x in
-       let e_body' = exp_resolve (Map.add x x' ctx) e_body in
+       let e_body' = exp_resolve ((x,x')::ctx) e_body in
        pos, E_Let (x', e_rhs', e_body')
 
 
   and path_resolve ctx = function
-    | pos, Var x ->
+    | pos, x ->
        (try
-          pos, Var (Map.find x ctx)
+          pos, List.assoc x ctx
         with
         | Not_found ->
            raise (AstError (pos, Exn.Undef_var x)))
-
-    | pos, Field (e, x) ->
-       pos, Field (exp_resolve ctx e, x)
 
 
   let tl_resolve = function
@@ -86,7 +82,7 @@ module Resolve = struct
        TL_Anno (name, typ_resolve typ)
 
     | TL_Defn (name, exp) ->
-       TL_Defn (name, exp_resolve Map.empty exp)
+       TL_Defn (name, exp_resolve [] exp)
 
     | TL_Record name ->
        TL_Record name

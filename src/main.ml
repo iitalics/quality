@@ -1,11 +1,12 @@
 open Batteries
+open Globals
 
 let main file =
   let open Ast in
   try
     let lexbuf = Lexing.from_input file in
     while true do
-      let result = Lexer.token lexbuf in
+      let _ = Lexer.token lexbuf in
       print_string "test"; print_newline(); flush stdout
     done
   with Lexer.Eof ->

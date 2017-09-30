@@ -1,40 +1,49 @@
 open Batteries
 
 type pos = Lexing.position
-type 'a stx = pos * 'a
 
 
 type ('var, 'nfo) entire_program
-  = ('var, 'nfo) toplevel list
+  = ('var, 'nfo) toplvl list
 
-and ('var, 'nfo) toplevel
-  = TL_Anno of string stx * typ stx
-  | TL_Defn of string stx * ('var, 'nfo) exp stx
-  | TL_Record of string stx
+and ('var, 'nfo) toplvl
+  = TL_Sig of pos * string * typ
+  | TL_Def of pos * string * ('var, 'nfo) exp
+  | TL_Record of pos * string * field list
+
+and field = pos * string * typ
 
 (** Types **)
 and typ
-  = T_Named of string
+  = T_Named of pos * string
+  | T_Fun of typ list * typ
 
 (** Expressions **)
 and ('var, 'nfo) exp
   (* atoms *)
-  = E_Lit of lit
+  = E_Lit of pos * lit
   (* path expressions *)
-  | E_Ref of ('var, 'nfo) path stx
-  | E_Copy of ('var, 'nfo) path stx
-  | E_Move of ('var, 'nfo) path stx
+  | E_Ref of pos * ('var, 'nfo) path
+  | E_Copy of pos * ('var, 'nfo) path
+  | E_Move of pos * ('var, 'nfo) path
   (* simple recursive *)
-  | E_App of 'nfo * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx list
-  | E_Do of ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
+  | E_Anno of ('var, 'nfo) exp
+  | E_App of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) exp list
+  | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
   (* binding *)
-  | E_Let of 'var stx * ('var, 'nfo) exp stx * ('var, 'nfo) exp stx
-  | E_Lam of 'var stx list * ('var, 'nfo) exp stx
+  | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp
+  (* data constructors *)
+  | E_MakeStruct of 'nfo * (string * ('var, 'nfo) exp) list
 
-and ('var, 'nfo) path = 'var
+and ('var, 'nfo) path
+  = Pa_Var of 'var
+  | Pa_Field of ('var, 'nfo) path * string
+  | Pa_Expr of ('var, 'nfo) exp
 
 and lit = L_Unit | L_True | L_False | L_Int of int
 
+type info_none = [ `No_info ]
 
 module Exn = struct
 

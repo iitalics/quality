@@ -1,11 +1,21 @@
 open Batteries
 
-let main file =
-    let lexbuf = Lexing.from_input file in
+let main input =
+
+  let lexbuf = Lexing.from_input input in
+  try
     let result = Parser.prog Lexer.token lexbuf in
-    Ast_surface.get_string result; print_newline(); flush stdout
+    Ast_surface.get_string result; print_newline(); flush stdout;
+  with
+  | Lexer.Error msg ->
+     print_string "INVALID TOKEN! @"; print_int msg; print_newline();
+  | Parser.Error ->
+     print_string "ERROR! "; print_string (Lexing.lexeme lexbuf); print_string " @ ";
+     print_int (Lexing.lexeme_start lexbuf); print_newline();
 ;;
 
 let () =
-  main(File.open_in Sys.argv.(1))
+  let file = File.open_in Sys.argv.(1) in
+    main(file);
+;;
     

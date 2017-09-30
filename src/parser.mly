@@ -9,7 +9,7 @@ open Ast_surface
 %token <string> STR
 
 /* Keywords */
-%token TYPE AND WHERE IF ELIF ELSE WHILE VAR
+%token TYPE AND WHERE IF ELIF ELSE WHILE VAR FUN
 
 /* Brackets */
 %token LPAREN RPAREN LANGLE RANGLE LSQUARE RSQUARE VERTB LCURL RCURL
@@ -45,6 +45,9 @@ prog:
 toplevel:
 |        n=name COLON COLON s=sign      { $startpos,TL_Sig(n,s) }
 |        n=name EQUAL e=exp             { $startpos,TL_Defn(n,e) }
+|        n=name a=delimited(LPAREN,separated_list(COMMA,name),RPAREN);
+         EQUAL option(EOL) LCURL b=separated_list(EOL,stmt) RCURL;
+                                        { $startpos,TL_Defn(n,E_Lam(a,b)) }
 |        TYPE n=name EQUAL f=fields     { $startpos,TL_Type(n,f) }
 ;
 
@@ -67,18 +70,22 @@ exp:
 |        e=exp DOT n=name                  { E_Fieldof(e,n) }
 |        a=exp;
          ars=delimited(LPAREN,separated_list(COMMA,exp),RPAREN) { E_App(a,ars) }
-|        ARROW l=delimited(LPAREN,separated_list(COMMA,name),RPAREN); option(EOL)
+|        FUN l=delimited(LPAREN,separated_list(COMMA,name),RPAREN); option(EOL)
              LCURL b=separated_list(EOL,stmt) RCURL      { E_Lam(l,b) }
+|        LCURL l=separated_list(COMMA,name);
+             EOL b=separated_list(EOL,stmt) RCURL { E_Lam(l,b) }
 ;
+
 lit:
 |        i=INT                               { L_Int(i) }
 |        b=TRUE                              { L_True }
 |        b=FALSE                             { L_False }
 |        u=UNIT                              { L_Unit }
 ;
+
 stmt:
-|        n=name EQUAL e=exp                  { S_Let(false,n,e) }
-|        VAR n=name EQUAL e=exp              { S_Let(true,n,e) }
+|        n=exp EQUAL e=exp                   { S_Reass(n,e) }
+|        VAR n=name EQUAL e=exp              { S_Let(n,e) }
 |        e=exp                               { S_Do(e) }
 |        IF e1=exp COLON option(EOL);
          e2=separated_list(EOL,stmt);
@@ -87,6 +94,7 @@ stmt:
 |        WHILE e1=exp COLON option(EOL);
          e2=separated_list(EOL,stmt);
          DSEMI                               { S_While(e1,e2) }
+|        option(EOL)                         { S_Nop }
 ;
 
 /* Type */

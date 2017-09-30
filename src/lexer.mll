@@ -1,6 +1,8 @@
 {
    open Batteries
    open Parser
+
+   exception Error of int
 }
 
 let white = [' ' '\t']
@@ -21,6 +23,7 @@ let elif  = "elif"  | "ELIF"  | "Elif"
 let else  = "else"  | "ELSE"  | "Else"
 let while = "while" | "WHILE" | "While"
 let var   = "var"   | "VAR"   | "Var"
+let fun   = "fun"   | "FUN"   | "Fun"
 
 (* Variables *)
 
@@ -47,14 +50,15 @@ rule token = parse
     | else               { ELSE }                (* else block *)
     | while              { WHILE }               (* while block *)
     | var                { VAR }
+    | fun                { FUN }
 
     (* Brackets *)
     | '('                { LPAREN }              (* Function application/Creation *)
     | ')'                { RPAREN }
     | '<'                { LANGLE }              (* 'Generic' braces *)
     | '>'                { RANGLE }
-    | '['                { LANGLE }              (* Arracy braces *)
-    | ']'                { RANGLE }
+    | '['                { LSQUARE }              (* Arracy braces *)
+    | ']'                { RSQUARE }
     | '|'                { VERTB }               (* Quality indicator *)
     | '{'                { LCURL }
     | '}'                { RCURL }
@@ -83,4 +87,6 @@ rule token = parse
 
     (* File marker *)
     | eof                { EOF }
+
+    | _                  { raise (Error (Lexing.lexeme_start lexbuf)) }
 

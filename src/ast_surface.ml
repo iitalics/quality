@@ -25,7 +25,8 @@ and exp
   | E_Lam of string stx list * stmt list
 
 and stmt
-  = S_Let of bool * string stx * exp
+  = S_Let of string stx * exp
+  | S_Reass of exp * exp 
   | S_Do of exp
   | S_If of exp * stmt list * stmt list
   | S_While of exp * stmt list
@@ -46,9 +47,9 @@ let rec get_string_typ t =
   let to_print =
     match t with
     | T_Var(v) -> snd v
-    | T_Sig(s1,s2) -> (List.iter get_string_typ s1);
-                      get_string_typ s2; "sig"
-  in print_string to_print
+    | T_Sig(s1,s2) -> print_string "( "; (List.iter get_string_typ s1);
+                      print_string "-> "; get_string_typ s2; ")"
+  in print_string to_print; print_string " ";
 ;;
 
 let get_string_lit l =
@@ -64,7 +65,10 @@ let get_string_lit l =
 let rec get_string_stmt s =
   let to_print =
     match s with
-    | S_Let(_,s,e) -> get_string_exp e; snd s
+    | S_Let(s,e) -> get_string_exp e; snd s
+    | S_Reass(s,e) -> print_string "( ";
+                      get_string_exp s; get_string_exp e;
+                      print_string ")"; ":reassign "
     | S_Do(e) -> get_string_exp e; "do"
     | S_If(e1,s2,s3) -> get_string_exp e1;
                         (List.iter get_string_stmt s2);
@@ -73,21 +77,21 @@ let rec get_string_stmt s =
     | S_While(e1,s2) -> get_string_exp e1;
                         (List.iter get_string_stmt s2);
                         "while"
-    | S_Nop -> "nop"
+    | S_Nop -> "nop "
   in print_string to_print
 and get_string_exp e =
   let to_print =
     match e with
-    | E_Lit(l) -> get_string_lit l; "lit"
-    | E_Var(v) -> snd v
-    | E_Ref(e) -> get_string_exp e; "ref"
-    | E_Move(e) -> get_string_exp e; "move"
+    | E_Lit(l) -> get_string_lit l; ":lit "
+    | E_Var(v) -> print_string (snd v); ":var "
+    | E_Ref(e) -> get_string_exp e; ":ref "
+    | E_Move(e) -> get_string_exp e; ":move "
     | E_Fieldof(e,s) -> get_string_exp e; snd s
-    | E_App(e,el) -> get_string_exp e;
-                     (List.iter get_string_exp el); "App"
-    | E_Lam(sl,stl) ->
-       (List.iter (fun x -> print_string (snd x)) sl);
-       (List.iter get_string_stmt stl); "Lam"
+    | E_App(e,el) -> print_string "( "; get_string_exp e;
+                     (List.iter get_string_exp el); "):Apply "
+    | E_Lam(sl,stl) -> print_string "{ ";
+       (List.iter (fun x -> print_string (snd x); print_string " ";) sl);
+       (List.iter get_string_stmt stl); print_string "}"; ":Lamba "
   in print_string to_print
 ;;
 
@@ -103,10 +107,9 @@ let rec get_string_top x =
     | TL_Sig(s,t) -> (get_string_typ t); snd s
     | TL_Defn(s,e) -> (get_string_exp e); snd s
     | TL_Type(s,t) -> (get_string_typr t); snd s
-  in print_string to_print
+  in print_string "of "; print_string to_print; print_newline();
 ;;
 
 let get_string x =
-  (List.iter (fun x -> get_string_top (snd x);
-     print_int (fst x).Lexing.pos_cnum) x)
+  (List.iter (fun x -> get_string_top (snd x);) x)
 ;;

@@ -4,7 +4,7 @@ open Ast_surface
 
 
 /* Literals */
-%token TRUE FALSE
+%token TRUE FALSE UNIT
 %token <int> INT
 %token <string> STR
 
@@ -15,7 +15,7 @@ open Ast_surface
 %token LPAREN RPAREN LANGLE RANGLE LSQUARE RSQUARE VERTB LCURL RCURL
 
 /* Punction */
-%token COMMA COLON ARROW MOVE EOL DSEMI
+%token COMMA COLON ARROW DOT MOVE EOL DSEMI
 
 /* Assignment */
 %token EQUAL
@@ -24,81 +24,81 @@ open Ast_surface
 %token PLUS MINUS DIV MULTI
 
 /* Variables */
-name:
-        s=STR                         { $startpos,s }
-;
 %token <string> ID
 
 /* File markers */
 %token EOF
 
 /* PRECEDENCE */
-%left PLUS MINUS
-%left DIV MULTI
+/*%left PLUS MINUS*/
+/*%left DIV MULTI MOVE*/
 
-%start main
-%type <entire_program> main
+%start <Ast_surface.entire_program> prog
 %%
 
-main:
-        main toplevel                  { $2::$1 }
-        toplevel EOF                   { [$1] }
+prog:
+|        EOF                               { [] }
+/*|      m=toplevel option(EOL) EOF        { [m] }*/
+|        m=toplevel option(EOL) p=prog EOF { m::p }
+|        m=toplevel p=prog EOF             { m::p }
+;
+toplevel:
+|        n=name COLON COLON s=sign      { $startpos,TL_Sig(n,s) }
+|        n=name EQUAL e=exp             { $startpos,TL_Defn(n,e) }
+|        TYPE n=name EQUAL f=fields     { $startpos,TL_Type(n,f) }
 ;
 
-toplevel:
-        decl n=name t=typ EOL          { $startpos,TL_Decl(n,t) }
-        defn n=name e=exp EOL          { $startpos,TL_Defn(n,e) }
-        type n=name t=fields EOL        { $startpos,TL_Type(n,($startpos,t)) } 
+/* Declerations WORKS */
+sign:
+|        tl=list(typ) ARROW t=typ        { T_Sig(tl,t) }
 ;
-/* Declerations */
 typ:
-        n=name LANGLE t=typcon RANGLE     { T_Con(n,t) }
-        n=name                            { T_Var(n) }
-;
-typcon:
-        t=typ                             { [($startpos,t)] }
-        t=typ COMMA r=typcon              { [($startpos,t)::r] }
+|        n=name                          { T_Var(n) }
+|        LPAREN s=sign RPAREN            { s }
 ;
 
 /* Definition */
-
 exp:
-        l=lit                             { E_Lit(l) }
-        v=STRING                          { E_Var(v) }
-        r=exp                             { E_Ref($startpos,r) }
-        m=exp                             { E_Move($startpos,m) }
-        f=exp n=name                      { E_Fieldof(($startpos,f),n) }
-        a=exp args=exps                   { E_App(($startpos,a),args) }
-        l=args b=stmts                    { E_Lam(l,b) }
+|        LPAREN e=exp RPAREN               { e }
+|        l=lit                             { E_Lit(l) }
+|        v=name                            { E_Var(v) }
+|        MOVE r=exp                        { E_Ref(r) }
+|        MULTI m=exp                       { E_Move(m) }
+|        e=exp DOT n=name                  { E_Fieldof(e,n) }
+|        a=exp;
+         ars=delimited(LPAREN,separated_list(COMMA,exp),RPAREN) { E_App(a,ars) }
+|        ARROW l=delimited(LPAREN,separated_list(COMMA,name),RPAREN); option(EOL)
+             LCURL b=separated_list(EOL,stmt) RCURL      { E_Lam(l,b) }
 ;
-
-stmt:
-        i=ID EQUAL e=exp                    { S_Let(false,i,($startpos,e)) }
-        e=exp                               { S_Do($startpos,e) }
-        IF e1=exp COLON e2=exps ELSE e3=exps {S_If(($startpos,e1),e2,e3) }
-        WHILE e1=exp COLON e2=exps          { S_While(($startpos,e1),e2) }
-;
-
 lit:
-        i=INT                               { L_Int(i) }
-        b=TRUE                              { L_True }
-        b=FALSE                             { L_False }
+|        i=INT                               { L_Int(i) }
+|        b=TRUE                              { L_True }
+|        b=FALSE                             { L_False }
+|        u=UNIT                              { L_Unit }
+;
+stmt:
+|        n=name EQUAL e=exp                  { S_Let(false,n,e) }
+|        VAR n=name EQUAL e=exp              { S_Let(true,n,e) }
+|        e=exp                               { S_Do(e) }
+|        IF e1=exp COLON option(EOL);
+         e2=separated_list(EOL,stmt);
+         ELSE e3=separated_list(EOL,stmt);
+         DSEMI                               { S_If(e1,e2,e3) }
+|        WHILE e1=exp COLON option(EOL);
+         e2=separated_list(EOL,stmt);
+         DSEMI                               { S_While(e1,e2) }
 ;
 
 /* Type */
 
 fields:
-        LSQUARE RSQUARE                   { [] }
-        LSQUARE f=field fs=fields RSQUARE { f::fs }
-        f=field fs=fields                 { f::fs }
+|        f=delimited(LSQUARE,separated_list(COMMA,field),RSQUARE) { f }
 ;
 
 field:
-        n=name COLON t=typ                { name,($startpos,typ) }
+|        n=name COLON t=typ                { n,t }
 ;
 
 name:
-        s=STR                         { $startpos,s }
+|        s=ID                         { ($startpos,s) }
 ;
-
-

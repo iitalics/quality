@@ -1,18 +1,11 @@
 open Batteries
 
 let main file =
-  let open Ast in
-  try
     let lexbuf = Lexing.from_input file in
-    while true do
-      let result = Lexer.token lexbuf in
-      print_string "test"; print_int (snd result).Lexing.pos_cnum; print_newline(); flush stdout
-    done
-  with Lexer.Eof ->
-    exit 0
+    let result = Parser.prog Lexer.token lexbuf in
+    Ast_surface.get_string result; print_newline(); flush stdout
+;;
 
 let () =
-  for i = 1 to Array.length Sys.argv - 1 do
-    main(File.open_in Sys.argv.(i))
-  done;;
+  main(File.open_in Sys.argv.(1))
     

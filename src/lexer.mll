@@ -1,6 +1,6 @@
 {
    open Batteries
-   exception Eof
+   open Parser
 }
 
 let white = [' ' '\t']
@@ -14,7 +14,7 @@ let str   = '"' _* '"'
 
 (* Keywords *)
 let typ   = "type"  | "TYPE"  | "Type"
-let and   = "and"   | "AND"   | "And"
+let andy  = "and"   | "AND"   | "And"
 let where = "where" | "WHERE" | "Where"
 let if    = "if"    | "IF"    | "If"
 let elif  = "elif"  | "ELIF"  | "Elif"
@@ -34,12 +34,13 @@ rule token = parse
     (* Literals *)
     | true               { TRUE }
     | false              { FALSE }
-    | num as lxm         { INT(string_of_int lxm) }
-    | str as lxm         { STR(str) }
+    | unit               { UNIT }
+    | num as lxm         { INT(int_of_string lxm) }
+    | str as lxm         { STR(lxm) }
     
     (* Keywords *)
     | typ                { TYPE }                (* Type declaration *)
-    | and                { AND }
+    | andy                { AND }
     | where              { WHERE }               (* Information appendage *)
     | if                 { IF }                  (* If block *)
     | elif               { ELIF }                (* elif block *)
@@ -62,6 +63,7 @@ rule token = parse
     | ','                { COMMA }
     | ':'                { COLON }
     | "->"               { ARROW }
+    | '.'                { DOT }
     | '&'                { MOVE }
     | ';'                { EOL }
     | ['\n']             { EOL }                 (* new lines *)
@@ -80,5 +82,5 @@ rule token = parse
     | id as lxm          { ID(lxm) }
 
     (* File marker *)
-    | eof                { raise Eof }
+    | eof                { EOF }
 

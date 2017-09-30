@@ -5,8 +5,8 @@ open Ast
 
 type context = {
     gamma : Type.t Scope.id_table;
-    type_reprs : Type.type_reprs;
-    sigs : (string, Type.t) Hashtbl.t;
+    type_reprs : (string, Type.type_repr) Hashtbl.t;
+    global_sigs : (string, Type.t) Hashtbl.t;
   }
 
 
@@ -134,7 +134,7 @@ and infer_path ctx = function
   | Pa_Var (pos, id) ->
      let open Scope.Ident in
      let t = match id with
-       | FV x -> Hashtbl.find ctx.sigs x
+       | FV x -> Hashtbl.find ctx.global_sigs x
        | BV _ -> Scope.IdTable.find ctx.gamma id
      in
      t, Pa_Var (pos, id)
@@ -142,10 +142,10 @@ and infer_path ctx = function
   | Pa_Field (sub_pa, x) ->
      let pos = pos_of_path sub_pa in
      let t, sub_pa' = infer_path ctx sub_pa in
-     let _, rec_flds = rec_name_and_flds pos (Exn.TypeNoField x) ctx t in
+     let _, flds = rec_name_and_flds pos (Exn.TypeNoField x) ctx t in
      let t_fld =
        try
-         List.assoc x rec_flds
+         List.assoc x flds
        with Not_found ->
          raise_ast_error pos (Exn.TypeNoField x)
      in

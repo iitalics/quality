@@ -50,26 +50,8 @@ module Resolve = struct
 
   type context = {
       scope : (string * id) list;
-      known_types : string Set.t;
-      known_globals : string Set.t;
-    }
-
-  let context_of_program tls = {
-      scope = [];
-
-      known_types =
-        List.enum tls
-        |> Enum.filter_map (function
-               | TL_Record (_, name, _) -> Some name
-               | _ -> None)
-        |> Set.of_enum;
-
-      known_globals =
-        List.enum tls
-        |> Enum.filter_map (function
-               | TL_Sig (_, name, _) -> Some name
-               | _ -> None)
-        |> Set.of_enum;
+      type_reprs : (string, Type.type_repr) Hashtbl.t;
+      global_sigs : (string, Type.t) Hashtbl.t;
     }
 
 
@@ -78,7 +60,7 @@ module Resolve = struct
        TL_Sig (pos, name, typ_resolve { ctx with scope = [] } t)
 
     | TL_Def (pos, name, e) ->
-       if Set.mem name ctx.known_globals then
+       if Hashtbl.mem ctx.global_sigs name then
          TL_Def (pos, name, exp_resolve { ctx with scope = [] } e)
        else
          raise_ast_error pos
@@ -95,7 +77,7 @@ module Resolve = struct
 
   and typ_resolve ctx = function
     | T_Named (pos, x) ->
-       if Set.mem x ctx.known_types then
+       if Hashtbl.mem ctx.type_reprs x then
          T_Named (pos, x)
        else
          raise_ast_error pos
@@ -155,7 +137,7 @@ module Resolve = struct
          try
            List.assoc x ctx.scope
          with Not_found ->
-           if Set.mem x ctx.known_globals then
+           if Hashtbl.mem ctx.global_sigs x then
              Ident.FV x
            else
              raise_ast_error pos (Exn.UndefVar x)

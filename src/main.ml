@@ -16,4 +16,3 @@ let () =
   for i = 1 to Array.length Sys.argv - 1 do
     main(File.open_in Sys.argv.(i))
   done;;
-    

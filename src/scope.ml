@@ -111,7 +111,9 @@ module Resolve = struct
     | E_Ref (pos, pth) -> E_Ref (pos, path_resolve ctx pth)
     | E_Move (pos, pth) -> E_Move (pos, path_resolve ctx pth)
     | E_Copy (pos, pth) -> E_Copy (pos, path_resolve ctx pth)
-    | E_Anno e -> E_Anno (exp_resolve ctx e)
+    | E_Anno (e, t) ->
+       E_Anno (exp_resolve ctx e,
+               typ_resolve { ctx with scope = [] } t)
 
     | E_App (i, e_fun, e_args) ->
        E_App (i, exp_resolve ctx e_fun,
@@ -139,12 +141,13 @@ module Resolve = struct
                   e in
        E_Lam (pos, i, xs', e')
 
-    | E_MakeStruct (i, flds) ->
+    | E_MakeStruct (pos, i, flds) ->
        let flds' = List.map
                      (fun (n, e) ->
                        (n, exp_resolve ctx e))
                      flds in
-       E_MakeStruct (i, flds')
+       E_MakeStruct (pos, i, flds')
+
 
   and path_resolve ctx = function
     | _ -> raise_ast_error Lexing.dummy_pos Exn.Unimplemented

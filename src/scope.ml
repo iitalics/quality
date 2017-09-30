@@ -41,6 +41,8 @@ end
 
 type id = Ident.t
 
+module IdTable = Hashtbl.Make(Ident)
+type 'v id_table = 'v IdTable.t
 
 
 module Resolve = struct

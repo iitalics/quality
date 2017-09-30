@@ -150,6 +150,24 @@ module Resolve = struct
 
 
   and path_resolve ctx = function
-    | _ -> raise_ast_error Lexing.dummy_pos Exn.Unimplemented
+    | Pa_Var (pos, x) ->
+       let x' =
+         try
+           List.assoc x ctx.scope
+         with Not_found ->
+           if Set.mem x ctx.known_globals then
+             Ident.FV x
+           else
+             raise_ast_error pos (Exn.UndefVar x)
+       in
+       Pa_Var (pos, x')
+
+    | Pa_Field (pa, x) ->
+       Pa_Field (path_resolve ctx pa, x)
+
+    | Pa_Expr e ->
+       Pa_Expr (exp_resolve ctx e)
+
+
 
 end

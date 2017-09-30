@@ -8,6 +8,7 @@ let white = [' ' '\t']
 (* Literals *)
 let true  = "true"  | "TRUE"  | "True"
 let false = "false" | "FALSE" | "False"
+let unit  = "unit"  | "UNIT"  | "Unit"
 let num   = ['0'-'9']+
 let str   = '"' _* '"'
 
@@ -19,6 +20,7 @@ let if    = "if"    | "IF"    | "If"
 let elif  = "elif"  | "ELIF"  | "Elif"
 let else  = "else"  | "ELSE"  | "Else"
 let while = "while" | "WHILE" | "While"
+let var   = "var"   | "VAR"   | "Var"
 
 (* Variables *)
 
@@ -43,6 +45,7 @@ rule token = parse
     | elif               { ELIF }                (* elif block *)
     | else               { ELSE }                (* else block *)
     | while              { WHILE }               (* while block *)
+    | var                { VAR }
 
     (* Brackets *)
     | '('                { LPAREN }              (* Function application/Creation *)
@@ -52,12 +55,15 @@ rule token = parse
     | '['                { LANGLE }              (* Arracy braces *)
     | ']'                { RANGLE }
     | '|'                { VERTB }               (* Quality indicator *)
+    | '{'                { LCURL }
+    | '}'                { RCURL }
 
     (* Punctuation *)
     | ','                { COMMA }
     | ':'                { COLON }
     | "->"               { ARROW }
-    | ';'                { SEMI }
+    | '&'                { MOVE }
+    | ';'                { EOL }
     | ['\n']             { EOL }                 (* new lines *)
     | ";;"               { DSEMI }               (* end codeblock *)
 

@@ -6,7 +6,7 @@ let main file =
     let lexbuf = Lexing.from_input file in
     while true do
       let result = Lexer.token lexbuf in
-      print_string "test"; print_newline(); flush stdout
+      print_string "test"; print_int (snd result).pos_cnum; print_newline(); flush stdout
     done
   with Lexer.Eof ->
     exit 0

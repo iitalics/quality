@@ -40,12 +40,27 @@ module Exn = struct
 
   type t
     = Undef_var of string
+    | ArgCount of int
+    | TypeNotFunctionApp
+    | TypeNotFunctionLam of string
+    | TypeMismatch of string * string
+    | TypeCannotInfer of string
+    | Unimplemented
 
   open Printf
 
   let to_string = function
-    | Undef_var x -> sprintf "undefined variable `%s'" x
+    | Undef_var x        -> sprintf "undefined variable `%s'" x
+    | ArgCount n         -> sprintf "expected %d argument%s to function"
+                              n (if n = 1 then "" else "s")
+    | TypeNotFunctionApp -> "attempt to call non-function value"
+    | TypeNotFunctionLam s -> sprintf "unexpected lambda, expected type `%s'" s
+    | TypeMismatch (a,b) -> sprintf "expected type `%s', got `%s'" a b
+    | TypeCannotInfer e  -> sprintf "cannot infer type of %s" e
+    | Unimplemented      -> "unimplemented expression"
 
 end
 
 exception AstError of Exn.t stx
+
+let raise_ast_error pos ex = raise (AstError (pos, ex))

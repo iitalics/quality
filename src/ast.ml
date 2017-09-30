@@ -75,6 +75,8 @@ module Exn = struct
     | ArgCount of int
     | TypeNotFunctionApp
     | TypeNotFunctionLam of string
+    | TypeUnexpectRecord
+    | TypeNoField of string
     | TypeMismatch of string * string
     | TypeCannotInfer of string
     | Unimplemented
@@ -88,8 +90,10 @@ module Exn = struct
                               n (if n = 1 then "" else "s")
     | TypeNotFunctionApp -> "attempt to call non-function value"
     | TypeNotFunctionLam s -> sprintf "unexpected lambda, expected type `%s'" s
+    | TypeUnexpectRecord -> "unexpected struct here"
+    | TypeNoField s -> sprintf "type does not contain field `%s'" s
     | TypeMismatch (a,b) -> sprintf "expected type `%s', got `%s'" a b
-    | TypeCannotInfer e  -> sprintf "cannot infer type of %s" e
+    | TypeCannotInfer e  -> "cannot infer type of" ^ e
     | Unimplemented      -> "unimplemented expression"
 
 end

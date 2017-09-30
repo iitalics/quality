@@ -48,7 +48,8 @@ type info_none = [ `No_info ]
 module Exn = struct
 
   type t
-    = Undef_var of string
+    = UndefVar of string
+    | UndefType of string
     | ArgCount of int
     | TypeNotFunctionApp
     | TypeNotFunctionLam of string
@@ -59,7 +60,8 @@ module Exn = struct
   open Printf
 
   let to_string = function
-    | Undef_var x        -> sprintf "undefined variable `%s'" x
+    | UndefVar x         -> sprintf "undefined variable `%s'" x
+    | UndefType x        -> sprintf "undefined type `%s'" x
     | ArgCount n         -> sprintf "expected %d argument%s to function"
                               n (if n = 1 then "" else "s")
     | TypeNotFunctionApp -> "attempt to call non-function value"
@@ -70,6 +72,6 @@ module Exn = struct
 
 end
 
-exception AstError of Exn.t stx
+exception AstError of pos * Exn.t
 
 let raise_ast_error pos ex = raise (AstError (pos, ex))

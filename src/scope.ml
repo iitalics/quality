@@ -60,11 +60,7 @@ module Resolve = struct
        TL_Sig (pos, name, typ_resolve { ctx with scope = [] } t)
 
     | TL_Def (pos, name, e) ->
-       if Hashtbl.mem ctx.global_sigs name then
-         TL_Def (pos, name, exp_resolve { ctx with scope = [] } e)
-       else
-         raise_ast_error pos
-           (Ast.Exn.UndefVar name)
+       TL_Def (pos, name, exp_resolve { ctx with scope = [] } e)
 
     | TL_Record (pos, name, flds) ->
        let ctx' = { ctx with scope = [] } in
@@ -104,6 +100,12 @@ module Resolve = struct
     | E_Do (e_1, e_2) ->
        E_Do (exp_resolve ctx e_1,
              exp_resolve ctx e_2)
+
+    | E_If (pos, e_1, e_2, e_3) ->
+       E_If (pos,
+             exp_resolve ctx e_1,
+             exp_resolve ctx e_2,
+             exp_resolve ctx e_3)
 
     | E_Let (pos, i, x, e_rhs, e_body) ->
        let x' = Ident.gen x in

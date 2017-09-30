@@ -30,6 +30,7 @@ and ('var, 'nfo) exp
   | E_Anno of ('var, 'nfo) exp * typ
   | E_App of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) exp list
   | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_If of pos * ('var, 'nfo) exp * ('var, 'nfo) exp * ('var, 'nfo) exp
   (* binding *)
   | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp
@@ -44,9 +45,12 @@ and ('var, 'nfo) path
 and lit = L_Unit | L_True | L_False | L_Int of int
 
 type info_none = [ `No_info ]
+
 type info_infer = [ info_none
                   | `Struct_typename of string ]
 
+type info_llift = [ info_infer
+                  | `Lifted of string ]
 
 let rec pos_of_exp = function
   | E_Lit (pos, l) -> pos
@@ -56,6 +60,7 @@ let rec pos_of_exp = function
   | E_Anno (e, t) -> pos_of_exp e
   | E_App (i, e_fun, e_args) -> pos_of_exp e_fun
   | E_Do (e_1, e_2) -> pos_of_exp e_1
+  | E_If (pos, e_1, e_2, e_3) -> pos
   | E_Let (pos, i, x, e_rhs, e_body) -> pos
   | E_Lam (pos, i, xs, e) -> pos
   | E_MakeStruct (pos, i, flds) -> pos
@@ -72,6 +77,8 @@ module Exn = struct
   type t
     = UndefVar of string
     | UndefType of string
+    | Redef of string
+    | SigMissing of string
     | ArgCount of int
     | TypeNotFunctionApp
     | TypeNotFunctionLam of string
@@ -86,6 +93,8 @@ module Exn = struct
   let to_string = function
     | UndefVar x         -> sprintf "undefined variable `%s'" x
     | UndefType x        -> sprintf "undefined type `%s'" x
+    | Redef x            -> sprintf "attempt to redefine `%s'" x
+    | SigMissing x       -> sprintf "missing signature for `%s'" x
     | ArgCount n         -> sprintf "expected %d argument%s to function"
                               n (if n = 1 then "" else "s")
     | TypeNotFunctionApp -> "attempt to call non-function value"

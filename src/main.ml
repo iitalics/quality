@@ -1,7 +1,5 @@
 open Batteries
-open Scope
-open Type
-open Typeck
+open Compile
 
 let main file =
   let open Ast in

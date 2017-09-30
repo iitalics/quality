@@ -32,7 +32,7 @@ let rec infer_exp ctx = function
      let t = Type.of_ast ty in
      t, check_exp ctx t e
 
-  | E_App (_, e_fun, e_args) ->
+  | E_App (i, e_fun, e_args) ->
      let t_fun, e_fun' = infer_exp ctx e_fun in
      (match t_fun with
      | Type.Fun (t_args, t_ret) ->
@@ -43,7 +43,7 @@ let rec infer_exp ctx = function
 
         (* check argument types *)
         let e_args' = List.map2 (check_exp ctx) t_args e_args in
-        t_ret, E_App (`No_info, e_fun', e_args')
+        t_ret, E_App ((i :> info_infer), e_fun', e_args')
 
      | _ ->
         raise_ast_error (Ast.pos_of_exp e_fun)
@@ -54,11 +54,17 @@ let rec infer_exp ctx = function
      let t, e_2' = infer_exp ctx e_2 in
      t, E_Do (e_1', e_2')
 
-  | E_Let (pos, _, x, e_rhs, e_body) ->
+  | E_If (pos, e_1, e_2, e_3) ->
+     let e_1' = check_exp ctx Type.builtin_bool e_1 in
+     let t, e_2' = infer_exp ctx e_2 in
+     let e_3' = check_exp ctx t e_2 in
+     t, E_If (pos, e_1', e_2', e_3')
+
+  | E_Let (pos, i, x, e_rhs, e_body) ->
      let t_x, e_rhs' = infer_exp ctx e_rhs in
      Scope.IdTable.add ctx.gamma x t_x;
      let t, e_body' = infer_exp ctx e_body in
-     t, E_Let (pos, `No_info, x, e_rhs', e_body')
+     t, E_Let (pos, (i :> info_infer), x, e_rhs', e_body')
 
   | E_Lam (pos, _, xs, e) ->
      raise_ast_error pos
@@ -72,7 +78,7 @@ let rec infer_exp ctx = function
 (** check that the given expression has the given type, using the context for inference.
     returns the elaborated form of the expression. **)
 and check_exp ctx t = function
-  | E_Lam (pos, _, xs, e) ->
+  | E_Lam (pos, i, xs, e) ->
      (match t with
       | Type.Fun (t_args, t_ret) ->
          (* check arg count *)
@@ -83,11 +89,18 @@ and check_exp ctx t = function
          (* insert arg types *)
          List.iter2 (Scope.IdTable.add ctx.gamma) xs t_args;
          (* check body *)
-         check_exp ctx t_ret e
+         let e' = check_exp ctx t_ret e in
+         E_Lam (pos, (i :> info_infer), xs, e')
 
       | _ ->
          raise_ast_error pos
            (Exn.TypeNotFunctionLam (Type.to_string t)))
+
+  | E_If (pos, e_1, e_2, e_3) ->
+     let e_1' = check_exp ctx Type.builtin_bool e_1 in
+     let e_2' = check_exp ctx t e_2 in
+     let e_3' = check_exp ctx t e_2 in
+     E_If (pos, e_1', e_2', e_3')
 
   | E_MakeStruct (pos, _, flds) ->
      let rec_name, rec_flds = rec_name_and_flds pos Exn.TypeUnexpectRecord ctx t in

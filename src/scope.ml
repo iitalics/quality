@@ -43,17 +43,7 @@ type id = Ident.t
 
 
 
-module Resolve : sig
-  open Ast
-
-  type context
-  val context_of_program : ('a, 'b) entire_program -> context
-
-  val tl_resolve : context -> (string, 'b) toplvl -> (id, 'b) toplvl
-  val typ_resolve : context -> typ -> typ
-  val exp_resolve : context -> (string, 'b) exp -> (id, 'b) exp
-
-end = struct
+module Resolve = struct
   open Ast
 
   type context = {

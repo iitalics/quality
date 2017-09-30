@@ -37,7 +37,7 @@ rule token = parse
     (* Literals *)
     | true               { TRUE }
     | false              { FALSE }
-    | unit               { UNIT }
+    (* | unit               { UNIT } *)
     | num as lxm         { INT(int_of_string lxm) }
     | str as lxm         { STR(lxm) }
     

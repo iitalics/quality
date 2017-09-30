@@ -37,24 +37,32 @@ open Ast_surface
 %%
 
 prog:
-|        EOF                               { [] }
-/*|      m=toplevel option(EOL) EOF        { [m] }*/
-|        m=toplevel option(EOL) p=prog EOF { m::p }
-|        m=toplevel p=prog EOF             { m::p }
+|        list(EOL) EOF                           { [] }
+|        m=toplevel list(EOL) p=prog             { m::p }
 ;
 toplevel:
-|        n=name COLON COLON s=sign      { $startpos,TL_Sig(n,s) }
-|        n=name EQUAL e=exp             { $startpos,TL_Defn(n,e) }
-|        n=name a=delimited(LPAREN,separated_list(COMMA,name),RPAREN);
-         EQUAL option(EOL) LCURL b=separated_list(EOL,stmt) RCURL;
-                                        { $startpos,TL_Defn(n,E_Lam(a,b)) }
-|        TYPE n=name EQUAL f=fields     { $startpos,TL_Type(n,f) }
+|       s=sigs                          { s }
+|       d=defn                         { d }
+|       t=typd                         { t }
+;
+sigs:
+|       n=name COLON COLON s=sign       { $startpos,TL_Sig(n,s) }
+;
+defn:
+|       n=name EQUAL e=exp              { $startpos,TL_Defn(n,e) }
+|       n=name LPAREN a=separated_list(COMMA,name) RPAREN EQUAL;
+        list(EOL) LCURL b=stmtblock;
+        RCURL                           { $startpos,TL_Defn(n,E_Lam(a,b)) }
+;
+typd:
+|       TYPE n=name EQUAL f=fields      { $startpos,TL_Type(n,f) }
 ;
 
-/* Declerations WORKS */
+/*******************/
 sign:
 |        tl=list(typ) ARROW t=typ        { T_Sig(tl,t) }
 ;
+/*******************/
 typ:
 |        n=name                          { T_Var(n) }
 |        LPAREN s=sign RPAREN            { s }
@@ -69,34 +77,37 @@ exp:
 |        MULTI m=exp                       { E_Move(m) }
 |        e=exp DOT n=name                  { E_Fieldof(e,n) }
 |        a=exp;
-         ars=delimited(LPAREN,separated_list(COMMA,exp),RPAREN) { E_App(a,ars) }
-|        FUN l=delimited(LPAREN,separated_list(COMMA,name),RPAREN); option(EOL)
-             LCURL b=separated_list(EOL,stmt) RCURL      { E_Lam(l,b) }
-|        LCURL l=separated_list(COMMA,name);
-             EOL b=separated_list(EOL,stmt) RCURL { E_Lam(l,b) }
+         LPAREN ars=separated_list(COMMA,exp) RPAREN { E_App(a,ars) }
+|        FUN LPAREN l=separated_list(COMMA,name) RPAREN;
+             LCURL b=stmtblock RCURL       { E_Lam(l,b) }
+|        LCURL l=separated_list(COMMA,name); EOL
+         b=stmtblock RCURL                 { E_Lam(l,b) }
+;
+stmt:
+|        n=exp EQUAL e=exp                   { S_Reass(n,e) }
+|        VAR n=name EQUAL e=exp              { S_Let(n,e) }
+|        e=exp                               { S_Do(e) }
+|        IF e1=exp COLON list(EOL);
+         e2=stmtblock;
+         ELSE e3=stmtblock;
+         DSEMI                               { S_If(e1,e2,e3) }
+|        WHILE e1=exp COLON list(EOL);
+         e2=stmtblock;
+         DSEMI                               { S_While(e1,e2) }
+|        EOL                                 { S_Nop }
+;
+stmtblock:
+|         s=stmt; list(EOL);                 { [s] }
+|         ss=stmt; list(EOL);
+                   sb=stmtblock              { ss::sb }
 ;
 
 lit:
 |        i=INT                               { L_Int(i) }
 |        b=TRUE                              { L_True }
 |        b=FALSE                             { L_False }
-|        u=UNIT                              { L_Unit }
+|        LPAREN RPAREN                       { L_Unit }
 ;
-
-stmt:
-|        n=exp EQUAL e=exp                   { S_Reass(n,e) }
-|        VAR n=name EQUAL e=exp              { S_Let(n,e) }
-|        e=exp                               { S_Do(e) }
-|        IF e1=exp COLON option(EOL);
-         e2=separated_list(EOL,stmt);
-         ELSE e3=separated_list(EOL,stmt);
-         DSEMI                               { S_If(e1,e2,e3) }
-|        WHILE e1=exp COLON option(EOL);
-         e2=separated_list(EOL,stmt);
-         DSEMI                               { S_While(e1,e2) }
-|        option(EOL)                         { S_Nop }
-;
-
 /* Type */
 
 fields:
@@ -110,3 +121,4 @@ field:
 name:
 |        s=ID                         { ($startpos,s) }
 ;
+

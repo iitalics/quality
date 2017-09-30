@@ -1,7 +1,8 @@
 {
+   open Batteries
    exception Eof
-
-   type token =
+   type token = item * Lexing.position
+   and item =
         (* Built-in literals *)
         | TRUE
         | FALSE
@@ -49,57 +50,57 @@ rule token = parse
 
     (* Literals *)
     | "true" | "TRUE" | "True"
-                         { TRUE }
+                         { TRUE, Lexing.lexeme_start_p lexbuf }
     | "false" | "FALSE" | "False"
-                         { FALSE }               (* Boolean literals *)
-    | ['0'-'9']+ as lxm  { INT(int_of_string lxm) }
-    | '"' _* '"' as lxm  { STR(lxm) }            (* String literals between any "" *)
+                         { FALSE, Lexing.lexeme_start_p lexbuf }               (* Boolean literals *)
+    | ['0'-'9']+ as lxm  { INT(int_of_string lxm), Lexing.lexeme_start_p lexbuf }
+    | '"' _* '"' as lxm  { STR(lxm), Lexing.lexeme_start_p lexbuf }            (* String literals between any "" *)
 
     (* Keywords *)
     | "type" | "TYPE" | "Type"
-                         { TYPE }                (* Type declaration *)
+                         { TYPE, Lexing.lexeme_start_p lexbuf }                (* Type declaration *)
     | "and" | "AND" | "And"
-                         { AND }
+                         { AND, Lexing.lexeme_start_p lexbuf }
     | "where" | "WHERE" | "Where"
-                         { WHERE }               (* Information appendage *)
+                         { WHERE, Lexing.lexeme_start_p lexbuf }               (* Information appendage *)
     | "if" | "IF" | "If"
-                         { IF }                  (* If block *)
+                         { IF, Lexing.lexeme_start_p lexbuf }                  (* If block *)
     | "elif" | "ELIF" | "Elif"
-                         { ELIF }                (* elif block *)
+                         { ELIF, Lexing.lexeme_start_p lexbuf }                (* elif block *)
     | "else" | "ELSE" | "Else"
-                         { ELSE }                (* else block *)
+                         { ELSE, Lexing.lexeme_start_p lexbuf }                (* else block *)
     | "while" | "WHILE" | "While"
-                         { WHILE }               (* while block *)
+                         { WHILE, Lexing.lexeme_start_p lexbuf }               (* while block *)
 
     (* Brackets *)
-    | '('                { LPAREN }              (* Function application/Creation *)
-    | ')'                { RPAREN }
-    | '<'                { LANGLE }              (* 'Generic' braces *)
-    | '>'                { RANGLE }
-    | '['                { LANGLE }              (* Arracy braces *)
-    | ']'                { RANGLE }
-    | '|'                { VERTB }               (* Quality indicator *)
+    | '('                { LPAREN, Lexing.lexeme_start_p lexbuf }              (* Function application/Creation *)
+    | ')'                { RPAREN, Lexing.lexeme_start_p lexbuf }
+    | '<'                { LANGLE, Lexing.lexeme_start_p lexbuf }              (* 'Generic' braces *)
+    | '>'                { RANGLE, Lexing.lexeme_start_p lexbuf }
+    | '['                { LANGLE, Lexing.lexeme_start_p lexbuf }              (* Arracy braces *)
+    | ']'                { RANGLE, Lexing.lexeme_start_p lexbuf }
+    | '|'                { VERTB, Lexing.lexeme_start_p lexbuf }               (* Quality indicator *)
 
     (* Punctuation *)
-    | ','                { COMMA }
-    | ':'                { COLON }
-    | "->"               { ARROW }
-    | ';'                { SEMI }
-    | ['\n']             { EOL }                 (* new lines *)
-    | ";;"               { DSEMI }               (* end codeblock *)
+    | ','                { COMMA, Lexing.lexeme_start_p lexbuf }
+    | ':'                { COLON, Lexing.lexeme_start_p lexbuf }
+    | "->"               { ARROW, Lexing.lexeme_start_p lexbuf }
+    | ';'                { SEMI, Lexing.lexeme_start_p lexbuf }
+    | ['\n']             { EOL, Lexing.lexeme_start_p lexbuf }                 (* new lines *)
+    | ";;"               { DSEMI, Lexing.lexeme_start_p lexbuf }               (* end codeblock *)
 
     (* Assignment *)
-    | '='                { EQUAL }
+    | '='                { EQUAL, Lexing.lexeme_start_p lexbuf }
 
     (* Arithmetic *)
-    | '+'                { PLUS }
-    | '-'                { MINUS }
-    | '/'                { DIV }
-    | '*'                { MULTI }
+    | '+'                { PLUS, Lexing.lexeme_start_p lexbuf }
+    | '-'                { MINUS, Lexing.lexeme_start_p lexbuf }
+    | '/'                { DIV, Lexing.lexeme_start_p lexbuf }
+    | '*'                { MULTI, Lexing.lexeme_start_p lexbuf }
 
     (* Variables *)
     | ['a'-'z''A'-'Z'] ['a'-'z''A'-'Z''0'-'9']* as lxm
-                         { ID(lxm) }
+                         { ID(lxm), Lexing.lexeme_start_p lexbuf }
 
     (* File marker *)
     | eof                { raise Eof }

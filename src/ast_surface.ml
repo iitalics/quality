@@ -1,5 +1,4 @@
 open Batteries
-open Binop
 
 type pos = Lexing.position
 type 'a stx = pos * 'a

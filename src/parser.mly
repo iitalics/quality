@@ -10,7 +10,7 @@ open Ast_surface
 %token <string> STR
 
 /* Keywords */
-%token TYPE AND WHERE IF ELIF ELSE WHILE VAR FUN AS
+%token TYPE AND WHERE IF ELIF ELSE WHILE VAR FUN AS EXT
 
 /* Brackets */
 %token LPAREN RPAREN LANGLE RANGLE LSQUARE RSQUARE VERTB LCURL RCURL
@@ -107,6 +107,7 @@ exp:
 |        REF   e = exp                     { E_UniOp(UO_Ref,e) }
 |        MULTI e = exp         %prec MOVE  { E_UniOp(UO_Mov,e) }
 |        NOT   e = exp                     { E_UniOp(UO_Not,e) }
+|        EXT s=STR                         { E_Extern($startpos,s) }
 |        e1=exp PLUS e2=exp                { E_BinOp(BO_Add,e1,e2) }
 |        e1=exp MINUS e2=exp               { E_BinOp(BO_Sub,e1,e2) }
 |        e1=exp MULTI e2=exp               { E_BinOp(BO_Mul,e1,e2) }

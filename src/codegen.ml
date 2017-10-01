@@ -106,31 +106,41 @@ and codegen_procedure
          "}\n// END: lifted lambda\n\n"])
 
 
-and codegen_fwd_globals
-  = fun gs ->
+and codegen_fwd_global
+  = fun (name, tyck_ctx, e) ->
   let open Printf in
-  gs
-  |> List.map (fun (name, tyck_ctx, e) ->
-         match e with
-         | E_Lam (_, `Lifted s, _, _) ->
-            sprintf "#define %s%s  ((void*) (%s))\n"
-              mangle_fv_prefix name s
+  match e with
+  | E_Lam (_, `Lifted s, _, _) ->
+     sprintf "#define %s%s  ((void*) (%s))\n"
+       mangle_fv_prefix name s
 
-         | _ ->
-            let gen = of_typeck_context tyck_ctx in
-            let t = simple_exp_type gen e in
-            sprintf "%s %s%s;\n"
-              (mangle_type tyck_ctx t)
-              mangle_fv_prefix name)
-  |> String.concat ""
+  | E_Extern (_, _, ext_name) ->
+     sprintf "#define %s%s  ((void*) (%s))\n"
+       mangle_fv_prefix name ext_name
 
-(*
-and codegen_init_globals
-  = fun gs ->
-  let open Printf in
-  gs
-  |> List.map (fun (name, tyck_ctx, e) ->
- *)
+  | _ ->
+     let gen = of_typeck_context tyck_ctx in
+     let t = simple_exp_type gen e in
+     sprintf "%s %s%s;\n"
+       (mangle_type tyck_ctx t)
+       mangle_fv_prefix name
+
+
+and codegen_fwd_extern
+  = fun (name, tyck_ctx, t) ->
+  match t with
+  | Type.Fun (t_args, t_ret) ->
+     let mangle_args = List.map (mangle_type tyck_ctx) t_args in
+     let mangle_ret = mangle_type tyck_ctx t_ret in
+     Printf.sprintf "extern %s %s(%s);\n"
+       mangle_ret
+       name
+       (String.concat ", " mangle_args)
+
+  | _ ->
+     Printf.sprintf "extern %s %s;\n"
+       (mangle_type tyck_ctx t)
+       name
 
 
 
@@ -141,7 +151,7 @@ and codegen_type_repr
   let open Printf in
   match tr with
   | Type.TR_Builtin x ->
-     sprintf "// builtin type %s = %s\n\n" name x
+     sprintf "// builtin type %s = %s\n" name x
 
   | Type.TR_Record flds ->
      String.concat "\n"
@@ -176,6 +186,9 @@ and codegen_exp : generate
          |> List.of_enum
          |> String.concat ""
          |> Printf.sprintf "\"%s\"")
+
+  | E_Extern (_, _, name) ->
+     Printf.sprintf "((void* ) %s)" name
 
   | E_Ref pa ->
      codegen_path_ref gen pa
@@ -299,6 +312,11 @@ and mangle_type tyck_ctx = function
 
 and simple_exp_type gen = function
   | E_Lit (pos, l) -> Typeck.infer_lit l
+  | E_Extern (_, i, _) ->
+     (match i with
+      | `Extern_type t -> t
+      | _ -> raise (Failure "invalid tag on extern in codegen"))
+
   | E_Ref pa -> simple_path_type gen pa
   | E_Move pa -> simple_path_type gen pa
   | E_Copy pa -> simple_path_type gen pa
@@ -307,7 +325,6 @@ and simple_exp_type gen = function
   | E_App (i, e_fun, e_args) ->
      (match i with
       | `Ret_type t -> t
-      | `No_info -> raise (Failure "invalid tag on app in codegen (no info)")
       | _ -> raise (Failure "invalid tag on app in codegen"))
 
   | E_Prim (o, _) ->

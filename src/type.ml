@@ -37,4 +37,7 @@ let builtin_reprs =
     ["unit", TR_Builtin "int";
      "int", TR_Builtin "int";
      "bool", TR_Builtin "char";
-     "str", TR_Builtin "char*"]
+     "str", TR_Builtin "char*";
+     "ptr", TR_Builtin "void*";
+     "double", TR_Builtin "double";
+    ]

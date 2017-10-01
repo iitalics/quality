@@ -44,11 +44,15 @@ let do_compile tls_surface =
                  let fn = generate_name () in
                  lifted_lams := (fn, tyck_ctx, clos, args, body)::!lifted_lams;
                  fn);
+
+               Lam_lift.lift_extern = (fun name t_ext ->
+                 lifted_externs := (name, tyck_ctx, t_ext)::!lifted_externs);
              } in
 
            let _, e_lift = Lam_lift.lam_lift_exp lift_cbs [] e_tyck in
            name, tyck_ctx, e_lift)
   in
+
 
   printf "// hello world\n\n";
 
@@ -75,7 +79,13 @@ let do_compile tls_surface =
            ~tyck:tyck_ctx))
     !lifted_lams;
 
-  print_string (Codegen.codegen_fwd_globals glob_defs);
+  List.iter (fun e ->
+      print_string (Codegen.codegen_fwd_extern e))
+    !lifted_externs;
+
+  List.iter (fun g ->
+      print_string (Codegen.codegen_fwd_global g))
+    glob_defs;
 
   (* implementations *)
   List.iter (fun (name, tyck_ctx, clos, args, body) ->

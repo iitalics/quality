@@ -9,13 +9,25 @@ type callbacks = {
     lift_lam : Scope.id list
                -> Scope.id list
                -> (Scope.id, info_llift) exp
-               -> string
+               -> string;
+
+    lift_extern : string
+                  -> Type.t
+                  -> unit;
   }
 
 
 let rec lam_lift_exp cbs locals = function
   | E_Lit (pos, l) ->
      Set.empty, E_Lit (pos, l)
+
+  | E_Extern (pos, i, name) ->
+     (match i with
+      | `Extern_type t ->
+         cbs.lift_extern name t;
+         Set.empty, E_Extern (pos, (i :> info_llift), name)
+
+      | _ -> raise (Failure "invalid tag on extern in lam_lift"))
 
   | E_Ref pa ->
      let c, pa' = lam_lift_path cbs locals pa in

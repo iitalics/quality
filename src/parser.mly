@@ -10,7 +10,7 @@ open Ast_surface
 %token <string> STR
 
 /* Keywords */
-%token TYPE AND WHERE IF ELIF ELSE WHILE VAR FUN
+%token TYPE AND WHERE IF ELIF ELSE WHILE VAR FUN AS
 
 /* Brackets */
 %token LPAREN RPAREN LANGLE RANGLE LSQUARE RSQUARE VERTB LCURL RCURL
@@ -119,6 +119,7 @@ exp:
 |        e1=exp LTE e2=exp                 { E_BinOp(BO_Lte,e1,e2) }
 |        e1=exp LAND e2=exp                { E_BinOp(BO_And,e1,e2) }
 |        e1=exp LOR e2=exp                 { E_BinOp(BO_Or ,e1,e2) }
+|        e=exp AS t=typ                    { E_Ann(e,t) }
 ;
 stmt:
 |        n=exp EQUAL e=exp                   { S_Reass(n,e) }

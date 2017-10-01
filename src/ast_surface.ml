@@ -17,6 +17,7 @@ and typ
 
 and exp
   = E_Lit of lit stx
+  | E_Ann of exp * typ
   | E_Var of string stx
   | E_Rec of ((string stx) * exp) list stx
   | E_Ref of exp
@@ -107,6 +108,7 @@ and get_string_exp e =
     | E_UniOp(o,v) -> print_string " UniOp( ";
                       get_string_exp v; ")"
     | E_Rec(l) -> " rec "
+    | E_Ann(e,t) -> get_string_exp e; ":ann "
   in print_string to_print
 ;;
 

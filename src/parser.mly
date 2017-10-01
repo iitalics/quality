@@ -54,7 +54,7 @@ open Ast_surface
 
 prog:
 |        list(EOL) EOF                           { [] }
-|        m=toplevel list(EOL) p=prog             { m::p }
+|        list(EOL) m=toplevel list(EOL) p=prog   { m::p }
 ;
 toplevel:
 |       s=sigs                          { s }
@@ -113,8 +113,8 @@ exp:
 |        e1=exp DIV e2=exp                 { E_BinOp(BO_Div,e1,e2) }
 |        e1=exp EQL e2=exp                 { E_BinOp(BO_Eql,e1,e2) }
 |        e1=exp NEQ e2=exp                 { E_BinOp(BO_Neq,e1,e2) }
-|        e1=exp GRT e2=exp                 { E_BinOp(BO_Grt,e1,e2) }
-|        e1=exp LST e2=exp                 { E_BinOp(BO_Lst,e1,e2) }
+|        e1=exp RANGLE e2=exp              { E_BinOp(BO_Grt,e1,e2) }
+|        e1=exp LANGLE e2=exp              { E_BinOp(BO_Lst,e1,e2) }
 |        e1=exp GTE e2=exp                 { E_BinOp(BO_Gte,e1,e2) }
 |        e1=exp LTE e2=exp                 { E_BinOp(BO_Lte,e1,e2) }
 |        e1=exp LAND e2=exp                { E_BinOp(BO_And,e1,e2) }

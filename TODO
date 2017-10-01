@@ -1,0 +1,10 @@
+TODO:
+	- Add pointers
+	- Add external C interface
+        - Generics
+	- Qualities
+        - Move/Copy/MM
+      	- Closures (<- Qualities)
+	- Recursive types
+	- Actually define language spec
+	- Traits

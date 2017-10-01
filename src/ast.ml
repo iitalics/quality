@@ -46,7 +46,9 @@ and ('var, 'nfo) path
   | Pa_Field of 'nfo * ('var, 'nfo) path * string
   | Pa_Expr of ('var, 'nfo) exp
 
-and lit = L_Unit | L_True | L_False | L_Int of int
+and lit = L_Unit | L_True | L_False
+          | L_Int of int
+          | L_String of string
 
 type info_none = [ `No_info ]
 

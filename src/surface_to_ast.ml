@@ -136,5 +136,4 @@ and conv_lit = function
   | S.L_False -> A.L_False
   | S.L_Unit -> A.L_Unit
   | S.L_Int n -> A.L_Int n
-  | _ ->
-     raise (Failure "unimplemented")
+  | S.L_Str s -> A.L_String s

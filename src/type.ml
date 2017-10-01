@@ -25,6 +25,7 @@ let rec to_string = function
 let builtin_unit = Con "unit"
 let builtin_bool = Con "bool"
 let builtin_int = Con "int"
+let builtin_str = Con "str"
 
 
 type type_repr
@@ -35,4 +36,5 @@ let builtin_reprs =
   Hashtbl.of_list
     ["unit", TR_Builtin "int";
      "int", TR_Builtin "int";
-     "bool", TR_Builtin "char";]
+     "bool", TR_Builtin "char";
+     "str", TR_Builtin "char*"]

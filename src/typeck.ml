@@ -209,3 +209,4 @@ and infer_lit = function
   | L_True -> Type.builtin_bool
   | L_False -> Type.builtin_bool
   | L_Int _ -> Type.builtin_int
+  | L_String _ -> Type.builtin_str

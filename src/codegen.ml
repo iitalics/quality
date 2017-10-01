@@ -115,6 +115,7 @@ and codegen_fwd_globals
          | E_Lam (_, `Lifted s, _, _) ->
             sprintf "#define %s%s  ((void*) (%s))\n"
               mangle_fv_prefix name s
+
          | _ ->
             let gen = of_typeck_context tyck_ctx in
             let t = simple_exp_type gen e in
@@ -167,7 +168,14 @@ and codegen_exp : generate
       | L_False -> "0"
       | L_True  -> "1"
       | L_Unit  -> "0"
-      | L_Int n -> string_of_int n)
+      | L_Int n -> Printf.sprintf "0x%x" n
+      | L_String s ->
+         String.enum s
+         /@ (fun c -> Printf.sprintf "\\x%02x"
+                        (Char.code c))
+         |> List.of_enum
+         |> String.concat ""
+         |> Printf.sprintf "\"%s\"")
 
   | E_Ref pa ->
      codegen_path_ref gen pa

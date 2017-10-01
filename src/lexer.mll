@@ -12,7 +12,6 @@ let true  = "true"  | "TRUE"  | "True"
 let false = "false" | "FALSE" | "False"
 let unit  = "unit"  | "UNIT"  | "Unit"
 let num   = ['0'-'9']+
-let str   = '"' _* '"'
 
 (* Keywords *)
 let typ   = "type"  | "TYPE"  | "Type"
@@ -40,7 +39,7 @@ rule token = parse
     | false              { FALSE }
     (* | unit               { UNIT } *)
     | num as lxm         { INT(int_of_string lxm) }
-    | str as lxm         { STR(lxm) }
+    | '"'                { read_string (Buffer.create 17) lexbuf }
     
     (* Keywords *)
     | typ                { TYPE }                (* Type declaration *)
@@ -101,3 +100,18 @@ rule token = parse
 
     | _                  { raise (Error (Lexing.lexeme_start lexbuf)) }
 
+and read_string buf = parse
+    | '"'       { STR (Buffer.contents buf) }
+    | '\\' '/'  { Buffer.add_char buf '/'; read_string buf lexbuf }
+    | '\\' '\\' { Buffer.add_char buf '\\'; read_string buf lexbuf }
+    | '\\' 'b'  { Buffer.add_char buf '\b'; read_string buf lexbuf }
+    | '\\' 'f'  { Buffer.add_char buf '\012'; read_string buf lexbuf }
+    | '\\' 'n'  { Buffer.add_char buf '\n'; read_string buf lexbuf }
+    | '\\' 'r'  { Buffer.add_char buf '\r'; read_string buf lexbuf }
+    | '\\' 't'  { Buffer.add_char buf '\t'; read_string buf lexbuf }
+    | [^ '"' '\\']+
+      { Buffer.add_string buf (Lexing.lexeme lexbuf);
+        read_string buf lexbuf
+      }
+    | _ { raise (SyntaxError ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
+    | eof { raise (SyntaxError ("String is not terminated")) }

@@ -23,18 +23,26 @@ and exp
   | E_Fieldof of exp * string stx
   | E_App of exp * exp list
   | E_Lam of string stx list * stmt list
+  | E_BinOp of bin_op * exp * exp
+  | E_UniOp of uni_op * exp
 
+and bin_op = BO_Add | BO_Sub | BO_Mul | BO_Div
+             | BO_Eql | BO_Neq | BO_Grt | BO_Lst | BO_Gte | BO_Lte
+             | BO_And | BO_Or
+and uni_op = UO_Neg | UO_Ref | UO_Mov | UO_Not
+                                               
 and stmt
   = S_Let of string stx * exp
   | S_Reass of exp * exp 
   | S_Do of exp
-  | S_If of exp * stmt list * stmt list
+  | S_If of (exp * stmt list) list * stmt list
   | S_While of exp * stmt list
   | S_Nop
 
 and lit
   = L_Unit
   | L_Int of int
+  | L_Str of string
   | L_True | L_False
 
 and type_repr = fields
@@ -70,9 +78,9 @@ let rec get_string_stmt s =
                       get_string_exp s; get_string_exp e;
                       print_string ")"; ":reassign "
     | S_Do(e) -> get_string_exp e; "do"
-    | S_If(e1,s2,s3) -> get_string_exp e1;
+    | S_If(_,_) -> (*get_string_exp e1;
                         (List.iter get_string_stmt s2);
-                        (List.iter get_string_stmt s3);
+                        (List.iter get_string_stmt s3);*)
                         "if"
     | S_While(e1,s2) -> get_string_exp e1;
                         (List.iter get_string_stmt s2);
@@ -92,6 +100,11 @@ and get_string_exp e =
     | E_Lam(sl,stl) -> print_string "{ ";
        (List.iter (fun x -> print_string (snd x); print_string " ";) sl);
        (List.iter get_string_stmt stl); print_string "}"; ":Lamba "
+    | E_BinOp(o,v1,v2) -> print_string " BinOp( ";
+                          get_string_exp v1; get_string_exp v2;
+                          ")"
+    | E_UniOp(o,v) -> print_string " UniOp( ";
+                      get_string_exp v; ")"
   in print_string to_print
 ;;
 

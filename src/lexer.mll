@@ -68,10 +68,11 @@ rule token = parse
     | ':'                { COLON }
     | "->"               { ARROW }
     | '.'                { DOT }
-    | '&'                { MOVE }
+    | '&'                { REF }
     | ';'                { EOL }
     | ['\n']             { EOL }                 (* new lines *)
     | ";;"               { DSEMI }               (* end codeblock *)
+    | '!'                { NOT }
 
     (* Assignment *)
     | '='                { EQUAL }
@@ -81,6 +82,14 @@ rule token = parse
     | '-'                { MINUS }
     | '/'                { DIV }
     | '*'                { MULTI }
+
+    (* Comparison *)
+    | "=="               { EQL }
+    | ">="               { GTE }
+    | "<="               { LTE }
+    | "!="               { NEQ }
+    | "&&"               { LAND }
+    | "||"               { LOR }
 
     (* Variables *)
     | id as lxm          { ID(lxm) }

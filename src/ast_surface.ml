@@ -59,7 +59,8 @@ let rec get_string_typ t =
     | T_Var(v) -> snd v
     | T_Sig(s1,s2) -> print_string "( "; (List.iter get_string_typ s1);
                       print_string "-> "; get_string_typ s2; ")"
-  in print_string to_print; print_string " ";
+  in print_string to_print; print_string " "
+
 
 let get_string_lit l =
   let to_print =
@@ -69,7 +70,9 @@ let get_string_lit l =
     | L_True -> "True"
     | L_Str s -> Printf.sprintf "\"%s\"" s
     | L_False -> "False"
-  in print_string to_print
+  in
+  print_string to_print
+
 
 let rec get_string_stmt s =
   let to_print =
@@ -121,7 +124,7 @@ let rec get_string_top x =
     | TL_Sig(s,t) -> (get_string_typ t); snd s
     | TL_Defn(s,e) -> (get_string_exp e); snd s
     | TL_Type(s,t) -> (get_string_typr t); snd s
-  in print_string "of "; print_string to_print; print_newline();
+  in print_string "of "; print_string to_print; print_newline()
 
 let get_string x =
   (List.iter (fun x -> get_string_top (snd x);) x)

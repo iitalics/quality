@@ -11,7 +11,8 @@ let generate_name : unit -> string
 let do_compile tls_surface =
   let open Printf in
   let tls_raw = Surface_to_ast.conv_toplevels tls_surface in
-  let globs = (** discover **)
+ (** discover **)
+  let globs =
     Globals.discover tls_raw in
 
   let tls_scoped =
@@ -22,6 +23,7 @@ let do_compile tls_surface =
                 type_reprs = globs.Globals.type_reprs; } in
     List.map (tl_resolve ctx) tls_raw
   in
+  
   let globs = Globals.discover tls_scoped in
 
   let lifted_lams = ref [] in

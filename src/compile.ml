@@ -37,12 +37,11 @@ let do_compile tls_raw =
                global_sigs = globs.Globals.global_sigs; } in
            let ty = Hashtbl.find globs.Globals.global_sigs name in
            let e_tyck = Typeck.check_exp tyck_ctx ty e in
-           let gamma = tyck_ctx.Typeck.gamma in
            (** lambda lift **)
            let _, e_lift = Lam_lift.lam_lift_exp
                              (fun clos args body ->
                                let fn = generate_name () in
-                               lifted := (fn, gamma, clos, args, body)::!lifted;
+                               lifted := (fn, tyck_ctx, clos, args, body)::!lifted;
                                fn)
                              []
                              e_tyck in

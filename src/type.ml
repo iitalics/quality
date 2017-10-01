@@ -28,7 +28,11 @@ let builtin_int = Con "int"
 
 
 type type_repr
-  = TR_Builtin of string * int
+  = TR_Builtin of string
   | TR_Record of (string * t) list
 
-type type_reprs = (string, type_repr) Hashtbl.t
+let builtin_reprs =
+  Hashtbl.of_list
+    ["unit", TR_Builtin "int";
+     "int", TR_Builtin "int";
+     "bool", TR_Builtin "char";]

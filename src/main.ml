@@ -1,5 +1,7 @@
 open Batteries
-open Compile
+open Scope
+open Typeck
+open Codegen
 
 let main file =
   let open Ast in

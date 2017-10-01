@@ -9,7 +9,7 @@ type 'def globals = {
   }
 
 let rec discover toplvls =
-  let ty_reps = Hashtbl.create 20 in
+  let ty_reps = Hashtbl.copy Type.builtin_reprs in
   let sigs = Hashtbl.create 50 in
   let defs = Hashtbl.create 50 in
   List.iter (function

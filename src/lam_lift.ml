@@ -1,6 +1,9 @@
 open Batteries
 open Ast
 
+type info_llift = [ Typeck.info_infer
+                  | `Lifted of string ]
+
 
 let rec lam_lift_exp lift locals = function
   | E_Lit (pos, l) ->
@@ -17,6 +20,12 @@ let rec lam_lift_exp lift locals = function
   | E_Move (pos, pa) ->
      let c, pa' = lam_lift_path lift locals pa in
      c, E_Move (pos, pa')
+
+  | E_Assn (pa, e) ->
+     let c1, pa' = lam_lift_path lift locals pa in
+     let c2, e' = lam_lift_exp lift locals e in
+     Set.union c1 c2,
+     E_Assn (pa', e')
 
   | E_Anno (e, t) ->
      lam_lift_exp lift locals e
@@ -38,6 +47,12 @@ let rec lam_lift_exp lift locals = function
      let c3, e_3' = lam_lift_exp lift locals e_3 in
      Set.union (Set.union c1 c2) c3,
      E_If (pos, e_1', e_2', e_3')
+
+  | E_While (pos, e_cond, e_body) ->
+     let c1, e_cond' = lam_lift_exp lift locals e_cond in
+     let c2, e_body' = lam_lift_exp lift locals e_body in
+     Set.union c1 c2,
+     E_While (pos, e_cond', e_body')
 
   | E_Let (pos, i, x, e_rhs, e_body) ->
      let c_rhs, e_rhs' = lam_lift_exp lift locals e_rhs in
@@ -69,9 +84,9 @@ and lam_lift_path lift locals = function
      else
        Set.singleton x, Pa_Var (pos, x)
 
-  | Pa_Field (pa, x) ->
+  | Pa_Field (i, pa, x) ->
      let c, pa' = lam_lift_path lift locals pa in
-     c, Pa_Field (pa', x)
+     c, Pa_Field ((i :> info_llift), pa', x)
 
   | Pa_Expr e ->
      let c, e' = lam_lift_exp lift locals e in

@@ -26,11 +26,13 @@ and ('var, 'nfo) exp
   | E_Ref of pos * ('var, 'nfo) path
   | E_Copy of pos * ('var, 'nfo) path
   | E_Move of pos * ('var, 'nfo) path
+  | E_Assn of ('var, 'nfo) path * ('var, 'nfo) exp
   (* simple recursive *)
   | E_Anno of ('var, 'nfo) exp * typ
   | E_App of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) exp list
   | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_If of pos * ('var, 'nfo) exp * ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_While of pos * ('var, 'nfo) exp * ('var, 'nfo) exp
   (* binding *)
   | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp
@@ -39,35 +41,32 @@ and ('var, 'nfo) exp
 
 and ('var, 'nfo) path
   = Pa_Var of pos * 'var
-  | Pa_Field of ('var, 'nfo) path * string
+  | Pa_Field of 'nfo * ('var, 'nfo) path * string
   | Pa_Expr of ('var, 'nfo) exp
 
 and lit = L_Unit | L_True | L_False | L_Int of int
 
 type info_none = [ `No_info ]
 
-type info_infer = [ info_none
-                  | `Struct_typename of string ]
-
-type info_llift = [ info_infer
-                  | `Lifted of string ]
 
 let rec pos_of_exp = function
   | E_Lit (pos, l) -> pos
   | E_Ref (pos, pa) -> pos
   | E_Move (pos, pa) -> pos
   | E_Copy (pos, pa) -> pos
+  | E_Assn (pa, e) -> pos_of_path pa
   | E_Anno (e, t) -> pos_of_exp e
   | E_App (i, e_fun, e_args) -> pos_of_exp e_fun
   | E_Do (e_1, e_2) -> pos_of_exp e_1
   | E_If (pos, e_1, e_2, e_3) -> pos
+  | E_While (pos, e_cond, e_body) -> pos
   | E_Let (pos, i, x, e_rhs, e_body) -> pos
   | E_Lam (pos, i, xs, e) -> pos
   | E_MakeStruct (pos, i, flds) -> pos
 
 and pos_of_path = function
   | Pa_Var (pos, _) -> pos
-  | Pa_Field (pa, _) -> pos_of_path pa
+  | Pa_Field (_, pa, _) -> pos_of_path pa
   | Pa_Expr e -> pos_of_exp e
 
 

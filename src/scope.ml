@@ -86,9 +86,12 @@ module Resolve = struct
 
   and exp_resolve ctx = function
     | E_Lit (pos, l) -> E_Lit (pos, l)
-    | E_Ref (pos, pth) -> E_Ref (pos, path_resolve ctx pth)
-    | E_Move (pos, pth) -> E_Move (pos, path_resolve ctx pth)
-    | E_Copy (pos, pth) -> E_Copy (pos, path_resolve ctx pth)
+    | E_Ref (pos, pa) -> E_Ref (pos, path_resolve ctx pa)
+    | E_Move (pos, pa) -> E_Move (pos, path_resolve ctx pa)
+    | E_Copy (pos, pa) -> E_Copy (pos, path_resolve ctx pa)
+    | E_Assn (pa, e) -> E_Assn (path_resolve ctx pa,
+                                exp_resolve ctx e)
+
     | E_Anno (e, t) ->
        E_Anno (exp_resolve ctx e,
                typ_resolve { ctx with scope = [] } t)
@@ -106,6 +109,11 @@ module Resolve = struct
              exp_resolve ctx e_1,
              exp_resolve ctx e_2,
              exp_resolve ctx e_3)
+
+    | E_While (pos, e_cond, e_body) ->
+       E_While (pos,
+                exp_resolve ctx e_cond,
+                exp_resolve ctx e_body)
 
     | E_Let (pos, i, x, e_rhs, e_body) ->
        let x' = Ident.gen x in
@@ -146,8 +154,8 @@ module Resolve = struct
        in
        Pa_Var (pos, x')
 
-    | Pa_Field (pa, x) ->
-       Pa_Field (path_resolve ctx pa, x)
+    | Pa_Field (i, pa, x) ->
+       Pa_Field (i, path_resolve ctx pa, x)
 
     | Pa_Expr e ->
        Pa_Expr (exp_resolve ctx e)

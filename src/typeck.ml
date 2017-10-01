@@ -3,6 +3,12 @@ open Ast
 
 (* this is essentially pierce/turner bidirectional typechecking *)
 
+type info_infer = [ info_none
+                  | `Struct_typename of string
+                  | `Field_type of Type.t
+                  | `Ret_type of Type.t ]
+
+
 type context = {
     gamma : Type.t Scope.id_table;
     type_reprs : (string, Type.type_repr) Hashtbl.t;
@@ -27,6 +33,11 @@ let rec infer_exp ctx = function
   | E_Copy (pos, pa) ->
      let t, pa' = infer_path ctx pa in
      Type.Ref t, E_Ref (pos, pa')
+
+  | E_Assn (pa, e) ->
+     let t_lhs, pa' = infer_path ctx pa in
+     let e' = check_exp ctx t_lhs e in
+     Type.builtin_unit, E_Assn (pa', e')
 
   | E_Anno (e, ty) ->
      let t = Type.of_ast ty in
@@ -60,6 +71,11 @@ let rec infer_exp ctx = function
      let e_3' = check_exp ctx t e_2 in
      t, E_If (pos, e_1', e_2', e_3')
 
+  | E_While (pos, e_cond, e_body) ->
+     let e_cond' = check_exp ctx Type.builtin_bool e_cond in
+     let e_body' = check_exp ctx Type.builtin_unit e_body in
+     Type.builtin_unit, E_While (pos, e_cond', e_body')
+
   | E_Let (pos, i, x, e_rhs, e_body) ->
      let t_x, e_rhs' = infer_exp ctx e_rhs in
      Scope.IdTable.add ctx.gamma x t_x;
@@ -85,7 +101,6 @@ and check_exp ctx t = function
          if List.length t_args <> List.length xs then
            raise_ast_error pos
              (Exn.ArgCount (List.length t_args));
-
          (* insert arg types *)
          List.iter2 (Scope.IdTable.add ctx.gamma) xs t_args;
          (* check body *)
@@ -95,6 +110,11 @@ and check_exp ctx t = function
       | _ ->
          raise_ast_error pos
            (Exn.TypeNotFunctionLam (Type.to_string t)))
+
+  | E_Do (e_1, e_2) ->
+     let e_1' = check_exp ctx Type.builtin_unit e_1 in
+     let e_2' = check_exp ctx t e_2 in
+     E_Do (e_1', e_2')
 
   | E_If (pos, e_1, e_2, e_3) ->
      let e_1' = check_exp ctx Type.builtin_bool e_1 in
@@ -152,17 +172,17 @@ and infer_path ctx = function
      in
      t, Pa_Var (pos, id)
 
-  | Pa_Field (sub_pa, x) ->
+  | Pa_Field (_, sub_pa, x) ->
      let pos = pos_of_path sub_pa in
      let t, sub_pa' = infer_path ctx sub_pa in
-     let _, flds = rec_name_and_flds pos (Exn.TypeNoField x) ctx t in
+     let rec_name, flds = rec_name_and_flds pos (Exn.TypeNoField x) ctx t in
      let t_fld =
        try
          List.assoc x flds
        with Not_found ->
          raise_ast_error pos (Exn.TypeNoField x)
      in
-     t_fld, Pa_Field (sub_pa', x)
+     t_fld, Pa_Field (`Field_type t_fld, sub_pa', x)
 
 
 and infer_lit = function

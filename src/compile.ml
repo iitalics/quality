@@ -24,7 +24,8 @@ let do_compile tls_surface =
   in
   let globs = Globals.discover tls_scoped in
 
-  let lifted = ref [] in
+  let lifted_lams = ref [] in
+  let lifted_externs = ref [] in
 
   let glob_defs =
     globs.Globals.global_defs
@@ -38,13 +39,14 @@ let do_compile tls_surface =
            let ty = Hashtbl.find globs.Globals.global_sigs name in
            let e_tyck = Typeck.check_exp tyck_ctx ty e in
            (** lambda lift **)
-           let _, e_lift = Lam_lift.lam_lift_exp
-                             (fun clos args body ->
-                               let fn = generate_name () in
-                               lifted := (fn, tyck_ctx, clos, args, body)::!lifted;
-                               fn)
-                             []
-                             e_tyck in
+           let lift_cbs = {
+               Lam_lift.lift_lam = (fun clos args body ->
+                 let fn = generate_name () in
+                 lifted_lams := (fn, tyck_ctx, clos, args, body)::!lifted_lams;
+                 fn);
+             } in
+
+           let _, e_lift = Lam_lift.lam_lift_exp lift_cbs [] e_tyck in
            name, tyck_ctx, e_lift)
   in
 
@@ -71,7 +73,7 @@ let do_compile tls_surface =
            ~args:args
            ~body:body
            ~tyck:tyck_ctx))
-    !lifted;
+    !lifted_lams;
 
   print_string (Codegen.codegen_fwd_globals glob_defs);
 
@@ -84,7 +86,7 @@ let do_compile tls_surface =
            ~args:args
            ~body:body
            ~tyck:tyck_ctx))
-    !lifted;
+    !lifted_lams;
 
   (* generate main *)
   printf "int main(void) {\nreturn ((int ( * )()) %smain)();\n}\n"

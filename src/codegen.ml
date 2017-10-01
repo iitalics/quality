@@ -354,3 +354,13 @@ and simple_path_type gen = function
       | _ -> raise (Failure "invalid tag on fieldof in codegen"))
 
   | Pa_Expr e -> simple_exp_type gen e
+
+
+
+
+
+
+
+
+
+

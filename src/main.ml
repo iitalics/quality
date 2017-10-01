@@ -65,17 +65,29 @@ let read_surface input =
 
 
      
-let main input =
+let main input output_pair =
+  let open Printf in
   try
-    Compile.do_compile (read_surface input);
-    if compile_bool then Printf.printf "Compiling...\n"
-    else Printf.printf "Writing source file... \n"
+    Compile.do_compile (read_surface input) (fst output_pair);
+    if compile_bool
+    then (printf "Compiling...\n";
+          printf "Completed with code %i!\n" (Sys.command (sprintf "cc %s" (snd output_pair))))
+    else (printf "Writing %s... \n" (snd output_pair);
+          printf "Completed!\n")
   with Ast.AstError (pos, ex) ->
-    Printf.fprintf IO.stderr "ast error: %s\n"
+    fprintf IO.stderr "ast error: %s\n"
        (Ast.Exn.to_string ex)
 
 
-
 let () =
-  let file = File.open_in file in
-    main(file)
+  let open File in
+  let out_perm = perm [user_read;user_write;group_read;other_read] in
+  let inp = open_in file in
+  let out = (if compile_bool
+             then File.open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ~mode:[`create;`trunc] ()
+             else (open_out ~perm:out_perm out_name),out_name) in
+  main inp out;
+  IO.close_in inp; IO.close_out (fst out)
+;;
+  
+    

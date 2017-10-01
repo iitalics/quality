@@ -8,10 +8,10 @@ let generate_name : unit -> string
     Codegen.mangle_lam_prefix ^ string_of_int k
 
 
-let do_compile tls_surface =
-  let open Printf in
+let do_compile tls_surface out =
+  let open Format in
   let tls_raw = Surface_to_ast.conv_toplevels tls_surface in
- (** discover **)
+  (** discover **)
   let globs =
     Globals.discover tls_raw in
 
@@ -55,8 +55,8 @@ let do_compile tls_surface =
            name, tyck_ctx, e_lift)
   in
 
-
-  printf "// hello world\n\n";
+  set_formatter_output out;
+  print_string "// hello world"; print_newline (); print_newline ();
 
   (* struct types *)
   Hashtbl.iter (fun name tr ->
@@ -101,5 +101,7 @@ let do_compile tls_surface =
     !lifted_lams;
 
   (* generate main *)
-  printf "int main(void) {\nreturn ((int ( * )()) %smain)();\n}\n"
-    Codegen.mangle_fv_prefix
+  print_string "int main(void) {"; print_newline();
+  print_string "return ((int ( * )()) ";
+  print_string Codegen.mangle_fv_prefix; print_string "main)();"; print_newline();
+  print_string "}"; print_newline();

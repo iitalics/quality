@@ -86,9 +86,9 @@ module Resolve = struct
 
   and exp_resolve ctx = function
     | E_Lit (pos, l) -> E_Lit (pos, l)
-    | E_Ref (pos, pa) -> E_Ref (pos, path_resolve ctx pa)
-    | E_Move (pos, pa) -> E_Move (pos, path_resolve ctx pa)
-    | E_Copy (pos, pa) -> E_Copy (pos, path_resolve ctx pa)
+    | E_Ref pa -> E_Ref (path_resolve ctx pa)
+    | E_Move pa -> E_Move (path_resolve ctx pa)
+    | E_Copy pa -> E_Copy (path_resolve ctx pa)
     | E_Assn (pa, e) -> E_Assn (path_resolve ctx pa,
                                 exp_resolve ctx e)
 
@@ -133,12 +133,12 @@ module Resolve = struct
                   e in
        E_Lam (pos, i, xs', e')
 
-    | E_MakeStruct (pos, i, flds) ->
+    | E_Rec (pos, i, flds) ->
        let flds' = List.map
                      (fun (n, e) ->
                        (n, exp_resolve ctx e))
                      flds in
-       E_MakeStruct (pos, i, flds')
+       E_Rec (pos, i, flds')
 
 
   and path_resolve ctx = function

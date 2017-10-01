@@ -15,6 +15,12 @@ type context = {
     global_sigs : (string, Type.t) Hashtbl.t;
   }
 
+let of_reprs_and_sigs reprs sigs = {
+    gamma = Scope.IdTable.create 20;
+    type_reprs = reprs;
+    global_sigs = sigs;
+  }
+
 
 (** infer the type of the expression given the context to infer in.
     returns the inferred type and the elaborated form of the expression **)
@@ -22,17 +28,17 @@ let rec infer_exp ctx = function
   | E_Lit (pos, l) ->
      infer_lit l, E_Lit (pos, l)
 
-  | E_Ref (pos, pa) ->
+  | E_Ref pa ->
      let t, pa' = infer_path ctx pa in
-     Type.Ref t, E_Ref (pos, pa')
+     Type.Ref t, E_Ref pa'
 
-  | E_Move (pos, pa) ->
+  | E_Move pa ->
      let t, pa' = infer_path ctx pa in
-     Type.Ref t, E_Ref (pos, pa')
+     Type.Ref t, E_Ref pa'
 
-  | E_Copy (pos, pa) ->
+  | E_Copy pa ->
      let t, pa' = infer_path ctx pa in
-     Type.Ref t, E_Ref (pos, pa')
+     Type.Ref t, E_Ref pa'
 
   | E_Assn (pa, e) ->
      let t_lhs, pa' = infer_path ctx pa in
@@ -86,7 +92,7 @@ let rec infer_exp ctx = function
      raise_ast_error pos
        (Exn.TypeCannotInfer "function arguments")
 
-  | E_MakeStruct (pos, _, flds) ->
+  | E_Rec (pos, _, flds) ->
      raise_ast_error pos
        (Exn.TypeCannotInfer "struct")
 
@@ -122,7 +128,7 @@ and check_exp ctx t = function
      let e_3' = check_exp ctx t e_2 in
      E_If (pos, e_1', e_2', e_3')
 
-  | E_MakeStruct (pos, _, flds) ->
+  | E_Rec (pos, _, flds) ->
      let rec_name, rec_flds = rec_name_and_flds pos Exn.TypeUnexpectRecord ctx t in
      let flds' = List.map
                    (fun (fld, e) ->
@@ -135,7 +141,7 @@ and check_exp ctx t = function
                      fld, check_exp ctx t e)
                    flds
      in
-     E_MakeStruct (pos, `Struct_typename rec_name, flds')
+     E_Rec (pos, `Struct_typename rec_name, flds')
 
 
   | e ->

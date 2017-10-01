@@ -10,6 +10,14 @@ type generate = {
     mutable vars : string Scope.id_table;
   }
 
+let of_typeck_context tyck_ctx = {
+    tyck_ctx = tyck_ctx;
+    next_id = 0;
+    regs = [];
+    out = Text.empty;
+    vars = Scope.IdTable.create 30;
+  }
+
 
 let mangle_fv_prefix = "_quality_g_"
 let mangle_type_prefix = "_quality_t_"
@@ -32,16 +40,6 @@ let gen_reg gen t =
   r
 
 
-let of_typeck_context tyck_ctx = {
-    tyck_ctx = tyck_ctx;
-    next_id = 0;
-    regs = [];
-    out = Text.empty;
-    vars = Scope.IdTable.create 30;
-  }
-
-
-
 
 
 let rec codegen_procedure
@@ -49,14 +47,13 @@ let rec codegen_procedure
         ~closure:clos
         ~args:args
         ~body:body
-        ~tyck:tyck_ctx
-        gen ->
+        ~tyck:tyck_ctx ->
   let gen = of_typeck_context tyck_ctx in
   (* get some type info *)
   let t_ret = simple_exp_type gen body in
   let t_args = List.map (Scope.IdTable.find gen.tyck_ctx.Typeck.gamma) args in
-  let mangle_ret = codegen_mangle_type gen t_ret in
-  let mangle_args = List.map (codegen_mangle_type gen) t_args in
+  let mangle_ret = mangle_type tyck_ctx t_ret in
+  let mangle_args = List.map (mangle_type tyck_ctx) t_args in
   (* argument names *)
   let r_args = List.map (fun _ -> gen_name gen mangle_arg_prefix) args in
   List.iter2 (Scope.IdTable.add gen.vars) args r_args;
@@ -65,27 +62,55 @@ let rec codegen_procedure
   (* put it all together *)
   let open Printf in
   String.concat "\n"
-    (["// begin lifted lambda declaration\n";
+    (["//";
+      "// BEGIN: lifted lambda declaration";
       sprintf "%s %s(%s) {"
         mangle_ret
         (String.concat ", " mangle_args)
-        (List.map2 (fun r t -> sprintf "%s %s" (codegen_mangle_type gen t) r)
+        (List.map2 (fun r t -> sprintf "%s %s" (mangle_type tyck_ctx t) r)
            r_args
            t_args
          |> String.concat ", ")]
 
      (* declare register variables *)
-     @ ["// local registers:\n"]
-     @ (List.map (fun (r, t) -> sprintf "%s %s;" (codegen_mangle_type gen t) r)
-          gen.regs)
+     @ ("\n// local registers:"::
+          List.map (fun (r, t) -> sprintf "%s %s;" (mangle_type tyck_ctx t) r)
+            gen.regs)
 
-     (* body text *)
-     @ ["\n// generated contents:\n"]
-     @ [Text.to_string gen.out]
+     @ [(* body text *)
+         "\n// generated contents:";
+         Text.to_string gen.out;
 
-     (* epilogue *)
-     @ ["\n// epilogue:\n";
-        sprintf "return %s;\n}\n\n" v_ret])
+         (* epilogue *)
+         "\n// epilogue:";
+         sprintf "return %s;" v_ret;
+         "}\n// END: lifted lambda\n\n";
+         "//"])
+
+
+and codegen_type_repr
+  = fun ~name:name
+        ~repr:tr
+        ~tyck:tyck_ctx ->
+  let open Printf in
+  match tr with
+  | Type.TR_Builtin x ->
+     sprintf "// builtin type %s = %s\n" name x
+
+  | Type.TR_Record flds ->
+     String.concat "\n"
+       (["//";
+         "// BEGIN: struct type declaration";
+         sprintf "typedef struct {"]
+
+        @ (List.map (fun (fld, t) ->
+               let mangle = mangle_type tyck_ctx t in
+               sprintf "%s %s;" fld mangle)
+             flds)
+
+        @ [sprintf "} %s%s" mangle_type_prefix name;
+           "// END: struct type declaration"])
+
 
 
 and codegen_exp gen = function
@@ -96,15 +121,15 @@ and codegen_exp gen = function
       | L_Unit  -> "0"
       | L_Int n -> string_of_int n)
 
-  | E_Ref (pos, pa) ->
+  | E_Ref pa ->
      codegen_path_ref gen pa
 
-  | E_Move (pos, pa) ->
+  | E_Move pa ->
      let r_dst = gen_reg gen (simple_path_type gen pa) in
      emit gen (Printf.sprintf "%s = *(%s);\n" r_dst (codegen_path_ref gen pa));
      r_dst
 
-  | E_Copy (pos, pa) ->
+  | E_Copy pa ->
      codegen_path_direct gen pa
 
   | E_Assn (pa, e_rhs) ->
@@ -119,8 +144,8 @@ and codegen_exp gen = function
   | E_App (i, e_fun, e_args) ->
      (match simple_exp_type gen e_fun with
       | Type.Fun (t_args, t_ret) ->
-         let mangle_ret = codegen_mangle_type gen t_ret in
-         let mangle_args = List.map (codegen_mangle_type gen) t_args in
+         let mangle_ret = mangle_type gen.tyck_ctx t_ret in
+         let mangle_args = List.map (mangle_type gen.tyck_ctx) t_args in
          let r_ret = gen_reg gen t_ret in
          let v_fun = codegen_exp gen e_fun in
          let v_args = List.map (codegen_exp gen) e_args in
@@ -168,7 +193,7 @@ and codegen_exp gen = function
       | `Lifted k -> k
       | _ -> raise (Failure "invalid tag on lambda in codegen"))
 
-  | E_MakeStruct (pos, i, flds) as e ->
+  | E_Rec (pos, i, flds) as e ->
      let r_struct = gen_reg gen (simple_exp_type gen e) in
      flds |> List.iter (fun (fld, e_fld) ->
                  let v_fld = codegen_exp gen e_fld in
@@ -195,23 +220,23 @@ and codegen_path_direct gen = function
      r
 
 
-and codegen_mangle_type gen = function
+and mangle_type tyck_ctx = function
   | Type.Fun _ -> "void*"
 
   | Type.Con name ->
-     (match Hashtbl.find gen.tyck_ctx.Typeck.type_reprs name with
+     (match Hashtbl.find tyck_ctx.Typeck.type_reprs name with
       | Type.TR_Builtin b -> b
       | Type.TR_Record _ -> mangle_type_prefix ^ name)
 
   | Type.Ref t ->
-     (codegen_mangle_type gen t) ^ "*"
+     (mangle_type tyck_ctx t) ^ "*"
 
 
 and simple_exp_type gen = function
   | E_Lit (pos, l) -> Typeck.infer_lit l
-  | E_Ref (pos, pa) -> simple_path_type gen pa
-  | E_Move (pos, pa) -> simple_path_type gen pa
-  | E_Copy (pos, pa) -> simple_path_type gen pa
+  | E_Ref pa -> simple_path_type gen pa
+  | E_Move pa -> simple_path_type gen pa
+  | E_Copy pa -> simple_path_type gen pa
   | E_Assn (pa, e) -> Type.builtin_unit
   | E_Anno (e, t) -> Type.of_ast t
   | E_App (i, e_fun, e_args) ->
@@ -226,7 +251,7 @@ and simple_exp_type gen = function
   | E_Lam (pos, i, xs, e) ->
      Type.Fun (List.map (Scope.IdTable.find gen.tyck_ctx.Typeck.gamma) xs,
                simple_exp_type gen e)
-  | E_MakeStruct (pos, i, flds) ->
+  | E_Rec (pos, i, flds) ->
      (match i with
       | `Struct_typename s -> Type.Con s
       | _ -> raise (Failure "invalid tag on makestruct in codegen"))

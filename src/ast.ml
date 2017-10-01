@@ -23,9 +23,9 @@ and ('var, 'nfo) exp
   (* atoms *)
   = E_Lit of pos * lit
   (* path expressions *)
-  | E_Ref of pos * ('var, 'nfo) path
-  | E_Copy of pos * ('var, 'nfo) path
-  | E_Move of pos * ('var, 'nfo) path
+  | E_Ref of ('var, 'nfo) path
+  | E_Copy of ('var, 'nfo) path
+  | E_Move of ('var, 'nfo) path
   | E_Assn of ('var, 'nfo) path * ('var, 'nfo) exp
   (* simple recursive *)
   | E_Anno of ('var, 'nfo) exp * typ
@@ -37,7 +37,7 @@ and ('var, 'nfo) exp
   | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp
   (* data constructors *)
-  | E_MakeStruct of pos * 'nfo * (string * ('var, 'nfo) exp) list
+  | E_Rec of pos * 'nfo * (string * ('var, 'nfo) exp) list
 
 and ('var, 'nfo) path
   = Pa_Var of pos * 'var
@@ -51,9 +51,9 @@ type info_none = [ `No_info ]
 
 let rec pos_of_exp = function
   | E_Lit (pos, l) -> pos
-  | E_Ref (pos, pa) -> pos
-  | E_Move (pos, pa) -> pos
-  | E_Copy (pos, pa) -> pos
+  | E_Ref pa -> pos_of_path pa
+  | E_Move pa -> pos_of_path pa
+  | E_Copy pa -> pos_of_path pa
   | E_Assn (pa, e) -> pos_of_path pa
   | E_Anno (e, t) -> pos_of_exp e
   | E_App (i, e_fun, e_args) -> pos_of_exp e_fun
@@ -62,7 +62,7 @@ let rec pos_of_exp = function
   | E_While (pos, e_cond, e_body) -> pos
   | E_Let (pos, i, x, e_rhs, e_body) -> pos
   | E_Lam (pos, i, xs, e) -> pos
-  | E_MakeStruct (pos, i, flds) -> pos
+  | E_Rec (pos, i, flds) -> pos
 
 and pos_of_path = function
   | Pa_Var (pos, _) -> pos

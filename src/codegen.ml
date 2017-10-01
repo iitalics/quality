@@ -140,7 +140,7 @@ and codegen_type_repr
   let open Printf in
   match tr with
   | Type.TR_Builtin x ->
-     sprintf "// builtin type %s = %s\n" name x
+     sprintf "// builtin type %s = %s\n\n" name x
 
   | Type.TR_Record flds ->
      String.concat "\n"
@@ -149,12 +149,12 @@ and codegen_type_repr
          sprintf "typedef struct {"]
 
         @ (List.map (fun (fld, t) ->
-               let mangle = mangle_type tyck_ctx t in
-               sprintf "%s %s;" fld mangle)
+               let mangled = mangle_type tyck_ctx t in
+               sprintf "%s %s;" mangled fld)
              flds)
 
-        @ [sprintf "} %s%s" mangle_type_prefix name;
-           "// END: struct type declaration"])
+        @ [sprintf "} %s%s;" mangle_type_prefix name;
+           "// END: struct type declaration\n\n"])
 
 
 

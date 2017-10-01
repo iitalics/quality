@@ -11,8 +11,7 @@ let generate_name : unit -> string
 let do_compile tls_surface =
   let open Printf in
   let tls_raw = Surface_to_ast.conv_toplevels tls_surface in
-  let globs =
-    (** discover **)
+  let globs = (** discover **)
     Globals.discover tls_raw in
 
   let tls_scoped =
@@ -51,6 +50,18 @@ let do_compile tls_surface =
 
   printf "// hello world\n\n";
 
+  (* struct types *)
+  Hashtbl.iter (fun name tr ->
+      print_string
+        (Codegen.codegen_type_repr
+           ~name:name
+           ~repr:tr
+           ~tyck:(Typeck.of_reprs_and_sigs
+                    globs.Globals.type_reprs
+                    globs.Globals.global_sigs)))
+    globs.Globals.type_reprs;
+
+
   (* forward declarations *)
   List.iter (fun (name, tyck_ctx, clos, args, body) ->
       print_string
@@ -76,5 +87,5 @@ let do_compile tls_surface =
     !lifted;
 
   (* generate main *)
-  printf "int main(void) {\nreturn ((int ( * )()) %smain)();}\n"
+  printf "int main(void) {\nreturn ((int ( * )()) %smain)();\n}\n"
     Codegen.mangle_fv_prefix

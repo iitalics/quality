@@ -104,7 +104,7 @@ module Exn = struct
     | TypeUnexpectRecord -> "unexpected struct here"
     | TypeNoField s -> sprintf "type does not contain field `%s'" s
     | TypeMismatch (a,b) -> sprintf "expected type `%s', got `%s'" a b
-    | TypeCannotInfer e  -> "cannot infer type of" ^ e
+    | TypeCannotInfer e  -> "cannot infer type of " ^ e
     | Unimplemented      -> "unimplemented expression"
 
 end

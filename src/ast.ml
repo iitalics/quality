@@ -30,14 +30,16 @@ and ('var, 'nfo) exp
   (* simple recursive *)
   | E_Anno of ('var, 'nfo) exp * typ
   | E_App of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) exp list
-  | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
-  | E_If of pos * ('var, 'nfo) exp * ('var, 'nfo) exp * ('var, 'nfo) exp
-  | E_While of pos * ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_Prim of string * ('var, 'nfo) exp list
   (* binding *)
   | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp
   (* data constructors *)
   | E_Rec of pos * 'nfo * (string * ('var, 'nfo) exp) list
+  (* control flow *)
+  | E_Do of ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_If of pos * ('var, 'nfo) exp * ('var, 'nfo) exp * ('var, 'nfo) exp
+  | E_While of pos * ('var, 'nfo) exp * ('var, 'nfo) exp
 
 and ('var, 'nfo) path
   = Pa_Var of pos * 'var
@@ -57,6 +59,7 @@ let rec pos_of_exp = function
   | E_Assn (pa, e) -> pos_of_path pa
   | E_Anno (e, t) -> pos_of_exp e
   | E_App (i, e_fun, e_args) -> pos_of_exp e_fun
+  | E_Prim(_, es) -> pos_of_exp (List.hd es)
   | E_Do (e_1, e_2) -> pos_of_exp e_1
   | E_If (pos, e_1, e_2, e_3) -> pos
   | E_While (pos, e_cond, e_body) -> pos
@@ -79,7 +82,7 @@ module Exn = struct
     | Redef of string
     | SigMissing of string
     | ArgCount of int
-    | TypeNotFunctionApp
+    | TypeNotFunctionApp of string
     | TypeNotFunctionLam of string
     | TypeUnexpectRecord
     | TypeNoField of string
@@ -96,7 +99,7 @@ module Exn = struct
     | SigMissing x       -> sprintf "missing signature for `%s'" x
     | ArgCount n         -> sprintf "expected %d argument%s to function"
                               n (if n = 1 then "" else "s")
-    | TypeNotFunctionApp -> "attempt to call non-function value"
+    | TypeNotFunctionApp s -> sprintf "attempt to call non-function type `%s'" s
     | TypeNotFunctionLam s -> sprintf "unexpected lambda, expected type `%s'" s
     | TypeUnexpectRecord -> "unexpected struct here"
     | TypeNoField s -> sprintf "type does not contain field `%s'" s

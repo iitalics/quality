@@ -34,11 +34,11 @@ let rec infer_exp ctx = function
 
   | E_Move pa ->
      let t, pa' = infer_path ctx pa in
-     Type.Ref t, E_Ref pa'
+     t, E_Move pa'
 
   | E_Copy pa ->
      let t, pa' = infer_path ctx pa in
-     Type.Ref t, E_Ref pa'
+     t, E_Copy pa'
 
   | E_Assn (pa, e) ->
      let t_lhs, pa' = infer_path ctx pa in
@@ -60,11 +60,12 @@ let rec infer_exp ctx = function
 
         (* check argument types *)
         let e_args' = List.map2 (check_exp ctx) t_args e_args in
-        t_ret, E_App ((i :> info_infer), e_fun', e_args')
+
+        t_ret, E_App (`Ret_type t_ret, e_fun', e_args')
 
      | _ ->
         raise_ast_error (Ast.pos_of_exp e_fun)
-          Exn.TypeNotFunctionApp)
+          (Exn.TypeNotFunctionApp (Type.to_string t_fun)))
 
   | E_Do (e_1, e_2) ->
      let e_1' = check_exp ctx Type.builtin_unit e_1 in
@@ -74,7 +75,7 @@ let rec infer_exp ctx = function
   | E_If (pos, e_1, e_2, e_3) ->
      let e_1' = check_exp ctx Type.builtin_bool e_1 in
      let t, e_2' = infer_exp ctx e_2 in
-     let e_3' = check_exp ctx t e_2 in
+     let e_3' = check_exp ctx t e_3 in
      t, E_If (pos, e_1', e_2', e_3')
 
   | E_While (pos, e_cond, e_body) ->
@@ -125,7 +126,7 @@ and check_exp ctx t = function
   | E_If (pos, e_1, e_2, e_3) ->
      let e_1' = check_exp ctx Type.builtin_bool e_1 in
      let e_2' = check_exp ctx t e_2 in
-     let e_3' = check_exp ctx t e_2 in
+     let e_3' = check_exp ctx t e_3 in
      E_If (pos, e_1', e_2', e_3')
 
   | E_Rec (pos, _, flds) ->

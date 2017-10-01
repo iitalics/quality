@@ -1,21 +1,29 @@
 open Batteries
 open Scope
-open Typeck
-open Codegen
 
-let main input =
-
+let read_surface input =
   let lexbuf = Lexing.from_input input in
   try
-    let result = Parser.prog Lexer.token lexbuf in
-    Ast_surface.get_string result; print_newline(); flush stdout;
+    Parser.prog Lexer.token lexbuf
   with
   | Lexer.Error msg ->
-     print_string "INVALID TOKEN! @"; print_int msg; print_newline();
+     Printf.printf "INVALID TOKEN! @%d\n" msg; exit 1
   | Parser.Error ->
-     print_string "ERROR! "; print_string (Lexing.lexeme lexbuf); print_string " @ ";
-     print_int (Lexing.lexeme_start lexbuf); print_newline();
+     Printf.printf "ERROR! %s @ %d\n"
+       (Lexing.lexeme lexbuf)
+       (Lexing.lexeme_start lexbuf); exit 1
+
+
+
+let main input =
+  try
+    Compile.do_compile (read_surface input)
+  with Ast.AstError (pos, ex) ->
+    Printf.fprintf IO.stderr "ast error: %s\n"
+       (Ast.Exn.to_string ex)
+
+
 
 let () =
   let file = File.open_in Sys.argv.(1) in
-    main(file);
+    main(file)

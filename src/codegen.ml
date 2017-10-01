@@ -19,6 +19,7 @@ let of_typeck_context tyck_ctx = {
   }
 
 
+let mangle_lam_prefix = "_quality_lam_"
 let mangle_fv_prefix = "_quality_g_"
 let mangle_type_prefix = "_quality_t_"
 let mangle_tmp_prefix = "_q_tmp_"
@@ -41,8 +42,29 @@ let gen_reg gen t =
 
 
 
+let rec codegen_proc_fwd_decl
+  = fun ~name:name
+        ~closure:clos
+        ~args:args
+        ~body:body
+        ~tyck:tyck_ctx ->
+  let gen = of_typeck_context tyck_ctx in
+  (* get some type info *)
+  let t_ret = simple_exp_type gen body in
+  let t_args = List.map (Scope.IdTable.find gen.tyck_ctx.Typeck.gamma) args in
+  let mangle_ret = mangle_type tyck_ctx t_ret in
+  let mangle_args = List.map (mangle_type tyck_ctx) t_args in
+  (* argument names *)
+  let r_args = List.map (fun _ -> gen_name gen mangle_arg_prefix) args in
+  List.iter2 (Scope.IdTable.add gen.vars) args r_args;
+  (* put it all together *)
+  Printf.sprintf "%s %s(%s);\n"
+    mangle_ret
+    name
+    (String.concat ", " mangle_args)
 
-let rec codegen_procedure
+
+and codegen_procedure
   = fun ~name:name
         ~closure:clos
         ~args:args
@@ -66,11 +88,8 @@ let rec codegen_procedure
       "// BEGIN: lifted lambda declaration";
       sprintf "%s %s(%s) {"
         mangle_ret
-        (String.concat ", " mangle_args)
-        (List.map2 (fun r t -> sprintf "%s %s" (mangle_type tyck_ctx t) r)
-           r_args
-           t_args
-         |> String.concat ", ")]
+        name
+        (String.concat ", " (List.map2 (sprintf "%s %s") mangle_args r_args))]
 
      (* declare register variables *)
      @ ("\n// local registers:"::
@@ -84,8 +103,34 @@ let rec codegen_procedure
          (* epilogue *)
          "\n// epilogue:";
          sprintf "return %s;" v_ret;
-         "}\n// END: lifted lambda\n\n";
-         "//"])
+         "}\n// END: lifted lambda\n\n"])
+
+
+and codegen_fwd_globals
+  = fun gs ->
+  let open Printf in
+  gs
+  |> List.map (fun (name, tyck_ctx, e) ->
+         match e with
+         | E_Lam (_, `Lifted s, _, _) ->
+            sprintf "#define %s%s  ((void*) (%s))\n"
+              mangle_fv_prefix name s
+         | _ ->
+            let gen = of_typeck_context tyck_ctx in
+            let t = simple_exp_type gen e in
+            sprintf "%s %s%s;\n"
+              (mangle_type tyck_ctx t)
+              mangle_fv_prefix name)
+  |> String.concat ""
+
+(*
+and codegen_init_globals
+  = fun gs ->
+  let open Printf in
+  gs
+  |> List.map (fun (name, tyck_ctx, e) ->
+ *)
+
 
 
 and codegen_type_repr
@@ -113,7 +158,10 @@ and codegen_type_repr
 
 
 
-and codegen_exp gen = function
+and codegen_exp : generate
+                  -> (Scope.id, Lam_lift.info_llift) Ast.exp
+                  -> string
+  = fun gen -> function
   | E_Lit (pos, l) ->
      (match l with
       | L_False -> "0"
@@ -150,15 +198,14 @@ and codegen_exp gen = function
          let v_fun = codegen_exp gen e_fun in
          let v_args = List.map (codegen_exp gen) e_args in
          emit gen (Printf.sprintf "%s = ((%s (*) (%s)) %s)(%s);\n"
+                     r_ret
                      mangle_ret
                      (String.concat ", " mangle_args)
-                     r_ret
                      v_fun
                      (String.concat ", " v_args));
          r_ret
 
-      | _ -> raise_ast_error (pos_of_exp e_fun)
-               Exn.TypeNotFunctionApp)
+      | _ -> raise (Failure "applying non-function; this should have been caught in typechecking"))
 
   | E_Do (e_1, e_2) ->
      let _ = codegen_exp gen e_1 in
@@ -242,6 +289,7 @@ and simple_exp_type gen = function
   | E_App (i, e_fun, e_args) ->
      (match i with
       | `Ret_type t -> t
+      | `No_info -> raise (Failure "invalid tag on app in codegen (no info)")
       | _ -> raise (Failure "invalid tag on app in codegen"))
 
   | E_Do (e_1, e_2) -> simple_exp_type gen e_2

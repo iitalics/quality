@@ -3,7 +3,7 @@ open Batteries
 type pos = Lexing.position
 type 'a stx = pos * 'a
 
-type entire_program = toplevel stx list
+type entire_program = toplevel list
 
 (* NOT BASE *)
 and toplevel
@@ -24,7 +24,7 @@ and exp
   | E_Move of exp
   | E_Fieldof of exp * string stx
   | E_App of exp * exp list
-  | E_Lam of string stx list * stmt list
+  | E_Lam of pos * string stx list * stmt list
   | E_BinOp of bin_op * exp * exp
   | E_UniOp of uni_op * exp
 
@@ -37,9 +37,9 @@ and stmt
   = S_Let of string stx * exp
   | S_Reass of exp * exp
   | S_Do of exp
-  | S_If of (exp * stmt list) list * stmt list
+  | S_If of pos * (pos * exp * stmt list) list * stmt list
   | S_While of exp * stmt list
-  | S_Nop
+  | S_Nop of pos
 
 and lit
   = L_Unit
@@ -82,14 +82,14 @@ let rec get_string_stmt s =
                       get_string_exp s; get_string_exp e;
                       print_string ")"; ":reassign "
     | S_Do(e) -> get_string_exp e; "do"
-    | S_If(_,_) -> (*get_string_exp e1;
+    | S_If(_,_,_) -> (*get_string_exp e1;
                         (List.iter get_string_stmt s2);
                         (List.iter get_string_stmt s3);*)
                         "if"
     | S_While(e1,s2) -> get_string_exp e1;
                         (List.iter get_string_stmt s2);
                         "while"
-    | S_Nop -> "nop "
+    | S_Nop(_) -> "nop "
   in print_string to_print
 and get_string_exp e =
   let to_print =
@@ -101,7 +101,7 @@ and get_string_exp e =
     | E_Fieldof(e,s) -> get_string_exp e; snd s
     | E_App(e,el) -> print_string "( "; get_string_exp e;
                      (List.iter get_string_exp el); "):Apply "
-    | E_Lam(sl,stl) -> print_string "{ ";
+    | E_Lam(_,sl,stl) -> print_string "{ ";
        (List.iter (fun x -> print_string (snd x); print_string " ";) sl);
        (List.iter get_string_stmt stl); print_string "}"; ":Lamba "
     | E_BinOp(o,v1,v2) -> print_string " BinOp( ";

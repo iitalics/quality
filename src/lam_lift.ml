@@ -9,17 +9,17 @@ let rec lam_lift_exp lift locals = function
   | E_Lit (pos, l) ->
      Set.empty, E_Lit (pos, l)
 
-  | E_Ref (pos, pa) ->
+  | E_Ref pa ->
      let c, pa' = lam_lift_path lift locals pa in
-     c, E_Ref (pos, pa')
+     c, E_Ref pa'
 
-  | E_Copy (pos, pa) ->
+  | E_Copy pa ->
      let c, pa' = lam_lift_path lift locals pa in
-     c, E_Copy (pos, pa')
+     c, E_Copy pa'
 
-  | E_Move (pos, pa) ->
+  | E_Move pa ->
      let c, pa' = lam_lift_path lift locals pa in
-     c, E_Move (pos, pa')
+     c, E_Move pa'
 
   | E_Assn (pa, e) ->
      let c1, pa' = lam_lift_path lift locals pa in
@@ -35,6 +35,11 @@ let rec lam_lift_exp lift locals = function
      let cs, e_args' = List.split (List.map (lam_lift_exp lift locals) e_args) in
      List.fold_left Set.union c cs,
      E_App ((i :> info_llift), e_fun', e_args')
+
+  | E_Prim (o, es) ->
+     let cs, es' = List.split (List.map (lam_lift_exp lift locals) es) in
+     List.fold_left Set.union Set.empty cs,
+     E_Prim (o, es')
 
   | E_Do (e_1, e_2) ->
      let c1, e_1' = lam_lift_exp lift locals e_1 in
@@ -62,11 +67,11 @@ let rec lam_lift_exp lift locals = function
 
   | E_Lam (pos, i, xs, e) ->
      let c, e' = lam_lift_exp lift locals e in
-     let lifted_name = lift (Set.to_list c) xs e in
+     let lifted_name = lift (Set.to_list c) xs e' in
      Set.diff c (Set.of_list locals),
      E_Lam (pos, `Lifted lifted_name, xs, e')
 
-  | E_MakeStruct (pos, i, flds) ->
+  | E_Rec (pos, i, flds) ->
      let cs, flds' = List.split
                        (List.map (fun (fld, e) ->
                             let c, e' = lam_lift_exp lift locals e in
@@ -74,7 +79,7 @@ let rec lam_lift_exp lift locals = function
                           flds)
      in
      List.fold_left Set.union Set.empty cs,
-     E_MakeStruct (pos, (i :> info_llift), flds')
+     E_Rec (pos, (i :> info_llift), flds')
 
 
 and lam_lift_path lift locals = function

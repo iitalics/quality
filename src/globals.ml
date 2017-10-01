@@ -31,7 +31,7 @@ let rec discover toplvls =
 
          | TL_Def (pos, name, exp) ->
             if not (Hashtbl.mem sigs name) then
-              raise_ast_error pos (Exn.Redef name)
+              raise_ast_error pos (Exn.SigMissing name)
             else if Hashtbl.mem defs name then
               raise_ast_error pos (Exn.Redef name)
             else

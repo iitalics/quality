@@ -62,16 +62,16 @@ toplevel:
 |       t=typd                         { t }
 ;
 sigs:
-|       n=name COLON COLON s=sign       { $startpos,TL_Sig(n,s) }
+|       n=name COLON COLON s=sign       { TL_Sig(n,s) }
 ;
 defn:
-|       n=name EQUAL e=exp              { $startpos,TL_Defn(n,e) }
+|       n=name EQUAL e=exp              { TL_Defn(n,e) }
 |       n=name LPAREN a=separated_list(COMMA,name) RPAREN EQUAL;
         list(EOL) LCURL b=stmtblock;
-        RCURL                           { $startpos,TL_Defn(n,E_Lam(a,b)) }
+        RCURL                           { TL_Defn(n,E_Lam($startpos,a,b)) }
 ;
 typd:
-|       TYPE n=name EQUAL f=fields      { $startpos,TL_Type(n,f) }
+|       TYPE n=name EQUAL f=fields      { TL_Type(n,f) }
 ;
 
 /*******************/
@@ -99,10 +99,10 @@ exp:
          LPAREN;
          l=separated_list(COMMA,name);
          RPAREN;
-         LCURL b=stmtblock RCURL           { E_Lam(l,b) }
+         LCURL b=stmtblock RCURL           { E_Lam($startpos,l,b) }
 |        LCURL;
          l=separated_list(COMMA,name);
-         EOL; b=stmtblock; RCURL           { E_Lam(l,b) }
+         EOL; b=stmtblock; RCURL           { E_Lam($startpos,l,b) }
 |        MINUS e = exp       %prec UMINUS  { E_UniOp(UO_Neg,e) }
 |        REF   e = exp                     { E_UniOp(UO_Ref,e) }
 |        MULTI e = exp         %prec MOVE  { E_UniOp(UO_Mov,e) }
@@ -129,12 +129,12 @@ stmt:
 |        IF c=exp COLON list(EOL);
          b=stmtblock;
          el=elif;
-         e=els; DSEMI                       { S_If(((c,b)::el),e) }
+         e=els; DSEMI                       { S_If($startpos,(($startpos,c,b)::el),e) }
 
 |        WHILE e1=exp COLON list(EOL);
          e2=stmtblock;
          DSEMI                               { S_While(e1,e2) }
-|        EOL                                 { S_Nop }
+|        EOL                                 { S_Nop($startpos) }
 ;
 
 construct:
@@ -147,7 +147,7 @@ ass:
 elif:
 |                                            { [] }
 |        ELIF cond=exp COLON list(EOL);
-         b=stmtblock e=elif                  { (cond,b)::e }
+         b=stmtblock e=elif                  { ($startpos,cond,b)::e }
 ;
 els:
 |                                            { [] }
@@ -178,4 +178,3 @@ field:
 name:
 |        s=ID                         { ($startpos,s) }
 ;
-

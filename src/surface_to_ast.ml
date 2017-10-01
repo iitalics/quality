@@ -24,6 +24,9 @@ and conv_exp = function
   | S.E_Lit (pos, l) ->
      A.E_Lit (pos, conv_lit l)
 
+  | S.E_Extern (pos, name) ->
+     A.E_Extern (pos, `No_info, name)
+
   | S.E_Ann (e, t) ->
      A.E_Anno (conv_exp e, conv_typ t)
 

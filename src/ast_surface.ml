@@ -17,6 +17,7 @@ and typ
 
 and exp
   = E_Lit of lit stx
+  | E_Extern of pos * string
   | E_Ann of exp * typ
   | E_Var of string stx
   | E_Rec of ((string stx) * exp) list stx
@@ -90,6 +91,7 @@ and get_string_exp e =
   let to_print =
     match e with
     | E_Lit(l) -> get_string_lit (snd l); ":lit "
+    | E_Extern(_,s) -> s ^ ":extern"
     | E_Var(v) -> print_string (snd v); ":var "
     | E_Ref(e) -> get_string_exp e; ":ref "
     | E_Move(e) -> get_string_exp e; ":move "

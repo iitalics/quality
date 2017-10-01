@@ -22,6 +22,7 @@ and typ
 and ('var, 'nfo) exp
   (* atoms *)
   = E_Lit of pos * lit
+  | E_Extern of pos * 'nfo * string
   (* path expressions *)
   | E_Ref of ('var, 'nfo) path
   | E_Copy of ('var, 'nfo) path
@@ -55,6 +56,7 @@ type info_none = [ `No_info ]
 
 let rec pos_of_exp = function
   | E_Lit (pos, l) -> pos
+  | E_Extern (pos, _, _) -> pos
   | E_Ref pa -> pos_of_path pa
   | E_Move pa -> pos_of_path pa
   | E_Copy pa -> pos_of_path pa

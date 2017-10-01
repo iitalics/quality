@@ -6,7 +6,8 @@ open Ast
 type info_infer = [ info_none
                   | `Struct_typename of string
                   | `Field_type of Type.t
-                  | `Ret_type of Type.t ]
+                  | `Ret_type of Type.t
+                  | `Extern_type of Type.t ]
 
 
 type context = {
@@ -28,6 +29,10 @@ let of_reprs_and_sigs reprs sigs = {
 let rec infer_exp ctx = function
   | E_Lit (pos, l) ->
      infer_lit l, E_Lit (pos, l)
+
+  | E_Extern (pos, _, _) ->
+     raise_ast_error pos
+       (Exn.TypeCannotInfer "extern")
 
   | E_Ref pa ->
      let t, pa' = infer_path ctx pa in
@@ -113,6 +118,9 @@ let rec infer_exp ctx = function
 (** check that the given expression has the given type, using the context for inference.
     returns the elaborated form of the expression. **)
 and check_exp ctx t = function
+  | E_Extern (pos, _, name) ->
+     E_Extern (pos, `Extern_type t, name)
+
   | E_Lam (pos, i, xs, e) ->
      (match t with
       | Type.Fun (t_args, t_ret) ->

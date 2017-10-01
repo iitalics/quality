@@ -86,6 +86,7 @@ module Resolve = struct
 
   and exp_resolve ctx = function
     | E_Lit (pos, l) -> E_Lit (pos, l)
+    | E_Extern (pos, i, name) -> E_Extern (pos, i, name)
     | E_Ref pa -> E_Ref (path_resolve ctx pa)
     | E_Move pa -> E_Move (path_resolve ctx pa)
     | E_Copy pa -> E_Copy (path_resolve ctx pa)

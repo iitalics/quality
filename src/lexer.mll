@@ -25,6 +25,7 @@ let while = "while" | "WHILE" | "While"
 let var   = "var"   | "VAR"   | "Var"
 let fun   = "fun"   | "FUN"   | "Fun"
 let ass   = "as"    | "AS"    | "As"
+let ext   = "external" | "EXTERNAL" | "External"
 
 (* Variables *)
 
@@ -53,6 +54,7 @@ rule token = parse
     | var                { VAR }
     | fun                { FUN }
     | ass                { AS }
+    | ext                { EXT }
 
     (* Brackets *)
     | '('                { LPAREN }              (* Function application/Creation *)

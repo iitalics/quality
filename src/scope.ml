@@ -100,6 +100,9 @@ module Resolve = struct
        E_App (i, exp_resolve ctx e_fun,
               List.map (exp_resolve ctx) e_args)
 
+    | E_Prim (o, es) ->
+       E_Prim (o, List.map (exp_resolve ctx) es)
+
     | E_Do (e_1, e_2) ->
        E_Do (exp_resolve ctx e_1,
              exp_resolve ctx e_2)

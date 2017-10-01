@@ -30,7 +30,7 @@ and ('var, 'nfo) exp
   (* simple recursive *)
   | E_Anno of ('var, 'nfo) exp * typ
   | E_App of 'nfo * ('var, 'nfo) exp * ('var, 'nfo) exp list
-  | E_Prim of string * ('var, 'nfo) exp list
+  | E_Prim of Operators.t * ('var, 'nfo) exp list
   (* binding *)
   | E_Let of pos * 'nfo * 'var * ('var, 'nfo) exp * ('var, 'nfo) exp
   | E_Lam of pos * 'nfo * 'var list * ('var, 'nfo) exp

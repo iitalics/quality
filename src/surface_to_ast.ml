@@ -45,8 +45,11 @@ and conv_exp = function
               List.map snd xs,
               body')
 
-  | S.E_BinOp _ -> raise (Failure "bin ops not done")
-  | S.E_UniOp _ -> raise (Failure "uni ops not done")
+  | S.E_BinOp (o, e_1, e_2) ->
+     A.E_Prim (o, [conv_exp e_1; conv_exp e_2])
+
+  | S.E_UniOp (o, e) ->
+     A.E_Prim (o, [conv_exp e])
 
   | S.E_Ref e ->
      A.E_Ref (conv_path e)

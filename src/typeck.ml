@@ -22,6 +22,7 @@ let of_reprs_and_sigs reprs sigs = {
   }
 
 
+
 (** infer the type of the expression given the context to infer in.
     returns the inferred type and the elaborated form of the expression **)
 let rec infer_exp ctx = function
@@ -66,6 +67,17 @@ let rec infer_exp ctx = function
      | _ ->
         raise_ast_error (Ast.pos_of_exp e_fun)
           (Exn.TypeNotFunctionApp (Type.to_string t_fun)))
+
+  | E_Prim (o, es) as e ->
+     (try
+        let tn_ret::tn_args = Hashtbl.find Operators.signatures o in
+        let t_args = List.map (fun n -> Type.Con n) tn_args in
+        let t_ret = Type.Con tn_ret in
+        let es' = List.map2 (check_exp ctx) t_args es in
+        t_ret, E_Prim (o, es')
+      with Not_found ->
+        raise_ast_error (Ast.pos_of_exp e)
+          Ast.Exn.Unimplemented)
 
   | E_Do (e_1, e_2) ->
      let e_1' = check_exp ctx Type.builtin_unit e_1 in

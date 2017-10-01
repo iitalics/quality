@@ -1,4 +1,5 @@
 open Batteries
+open Binop
 
 type pos = Lexing.position
 type 'a stx = pos * 'a
@@ -25,13 +26,8 @@ and exp
   | E_Fieldof of exp * string stx
   | E_App of exp * exp list
   | E_Lam of pos * string stx list * stmt list
-  | E_BinOp of bin_op * exp * exp
-  | E_UniOp of uni_op * exp
-
-and bin_op = BO_Add | BO_Sub | BO_Mul | BO_Div
-             | BO_Eql | BO_Neq | BO_Grt | BO_Lst | BO_Gte | BO_Lte
-             | BO_And | BO_Or
-and uni_op = UO_Neg | UO_Ref | UO_Mov | UO_Not
+  | E_BinOp of Operators.t * exp * exp
+  | E_UniOp of Operators.t * exp
 
 and stmt
   = S_Let of string stx * exp

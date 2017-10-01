@@ -181,9 +181,9 @@ and codegen_exp : generate
      codegen_path_direct gen pa
 
   | E_Assn (pa, e_rhs) ->
-     let r_dst = gen_reg gen (simple_path_type gen pa) in
+     let v_dst_path = codegen_path_ref gen pa in
      let v_src = codegen_exp gen e_rhs in
-     emit gen (Printf.sprintf "*(%s) = %s;\n" r_dst v_src);
+     emit gen (Printf.sprintf "*(%s) = %s;\n" v_dst_path v_src);
      "0"
 
   | E_Anno (e, t) ->
@@ -206,6 +206,15 @@ and codegen_exp : generate
          r_ret
 
       | _ -> raise (Failure "applying non-function; this should have been caught in typechecking"))
+
+  | E_Prim (o, es) ->
+     (match Hashtbl.find Operators.c_implementations o,
+           List.map (codegen_exp gen) es with
+      | op,[v] ->
+         Printf.sprintf "(%s(%s))" op v
+      | op,[v1;v2] ->
+         Printf.sprintf "((%s) %s (%s))" v1 op v2
+      | _,_ -> raise (Failure "unreachable"))
 
   | E_Do (e_1, e_2) ->
      let _ = codegen_exp gen e_1 in
@@ -233,7 +242,8 @@ and codegen_exp : generate
      let r_x = gen_reg gen (Scope.IdTable.find gen.tyck_ctx.Typeck.gamma x) in
      let v_rhs = codegen_exp gen e_rhs in
      emit gen (Printf.sprintf "%s = %s;\n" r_x v_rhs);
-     r_x
+     Scope.IdTable.add gen.vars x r_x;
+     codegen_exp gen e_body
 
   | E_Lam (pos, i, _, _) ->
      (match i with
@@ -291,6 +301,9 @@ and simple_exp_type gen = function
       | `Ret_type t -> t
       | `No_info -> raise (Failure "invalid tag on app in codegen (no info)")
       | _ -> raise (Failure "invalid tag on app in codegen"))
+
+  | E_Prim (o, _) ->
+     Type.Con (List.hd (Hashtbl.find Operators.signatures o))
 
   | E_Do (e_1, e_2) -> simple_exp_type gen e_2
   | E_If (pos, e_1, e_2, e_3) -> simple_exp_type gen e_2

@@ -3,18 +3,19 @@ open Scope
 open Typeck
 open Codegen
 
-let main file =
-  let open Ast in
+let main input =
+
+  let lexbuf = Lexing.from_input input in
   try
-    let lexbuf = Lexing.from_input file in
-    while true do
-      let _ = Lexer.token lexbuf in
-      print_string "test"; print_newline(); flush stdout
-    done
-  with Lexer.Eof ->
-    exit 0
+    let result = Parser.prog Lexer.token lexbuf in
+    Ast_surface.get_string result; print_newline(); flush stdout;
+  with
+  | Lexer.Error msg ->
+     print_string "INVALID TOKEN! @"; print_int msg; print_newline();
+  | Parser.Error ->
+     print_string "ERROR! "; print_string (Lexing.lexeme lexbuf); print_string " @ ";
+     print_int (Lexing.lexeme_start lexbuf); print_newline();
 
 let () =
-  for i = 1 to Array.length Sys.argv - 1 do
-    main(File.open_in Sys.argv.(i))
-  done;;
+  let file = File.open_in Sys.argv.(1) in
+    main(file);

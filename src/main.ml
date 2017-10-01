@@ -84,7 +84,7 @@ let () =
   let out_perm = perm [user_read;user_write;group_read;other_read] in
   let inp = open_in file in
   let out = (if compile_bool
-             then File.open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ~mode:[`create;`trunc] ()
+             then File.open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ~mode:[`create;`trunc;`delete_on_exit] ()
              else (open_out ~perm:out_perm out_name),out_name) in
   main inp out;
   IO.close_in inp; IO.close_out (fst out)

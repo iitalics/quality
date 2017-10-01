@@ -7,9 +7,9 @@ let generate_name : unit -> string
     kk := (k + 1);
     Codegen.mangle_lam_prefix ^ string_of_int k
 
-
+    
 let do_compile tls_surface out =
-  let open Format in
+  let open Printf in
   let tls_raw = Surface_to_ast.conv_toplevels tls_surface in
   (** discover **)
   let globs =
@@ -55,12 +55,11 @@ let do_compile tls_surface out =
            name, tyck_ctx, e_lift)
   in
 
-  set_formatter_output out;
-  print_string "// hello world"; print_newline (); print_newline ();
+  fprintf out "%s\n\n" "// hello world";
 
   (* struct types *)
   Hashtbl.iter (fun name tr ->
-      print_string
+      fprintf out "%s"
         (Codegen.codegen_type_repr
            ~name:name
            ~repr:tr
@@ -72,7 +71,7 @@ let do_compile tls_surface out =
 
   (* forward declarations *)
   List.iter (fun (name, tyck_ctx, clos, args, body) ->
-      print_string
+      fprintf out "%s"
         (Codegen.codegen_proc_fwd_decl
            ~name:name
            ~closure:clos
@@ -82,16 +81,16 @@ let do_compile tls_surface out =
     !lifted_lams;
 
   List.iter (fun e ->
-      print_string (Codegen.codegen_fwd_extern e))
+      fprintf out "%s" (Codegen.codegen_fwd_extern e))
     !lifted_externs;
 
   List.iter (fun g ->
-      print_string (Codegen.codegen_fwd_global g))
+      fprintf out "%s" (Codegen.codegen_fwd_global g))
     glob_defs;
 
   (* implementations *)
   List.iter (fun (name, tyck_ctx, clos, args, body) ->
-      print_string
+      fprintf out "%s"
         (Codegen.codegen_procedure
            ~name:name
            ~closure:clos
@@ -101,7 +100,5 @@ let do_compile tls_surface out =
     !lifted_lams;
 
   (* generate main *)
-  print_string "int main(void) {"; print_newline();
-  print_string "return ((int ( * )()) ";
-  print_string Codegen.mangle_fv_prefix; print_string "main)();"; print_newline();
-  print_string "}"; print_newline();
+  fprintf out "int main(void) {\n\treturn ((int ( * )())%smain)();\n}" Codegen.mangle_fv_prefix
+

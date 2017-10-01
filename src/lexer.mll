@@ -3,6 +3,7 @@
    open Parser
 
    exception Error of int
+   exception StringLitError of int
 }
 
 let white = [' ' '\t']
@@ -40,7 +41,7 @@ rule token = parse
     (* | unit               { UNIT } *)
     | num as lxm         { INT(int_of_string lxm) }
     | '"'                { read_string (Buffer.create 17) lexbuf }
-    
+
     (* Keywords *)
     | typ                { TYPE }                (* Type declaration *)
     | andy                { AND }
@@ -113,5 +114,5 @@ and read_string buf = parse
       { Buffer.add_string buf (Lexing.lexeme lexbuf);
         read_string buf lexbuf
       }
-    | _ { raise (SyntaxError ("Illegal string character: " ^ Lexing.lexeme lexbuf)) }
-    | eof { raise (SyntaxError ("String is not terminated")) }
+    | _ { raise (StringLitError (Lexing.lexeme_start lexbuf)) }
+    | eof { raise (StringLitError (Lexing.lexeme_start lexbuf)) }

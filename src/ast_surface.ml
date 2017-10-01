@@ -16,8 +16,9 @@ and typ
   | T_Sig of typ list * typ
 
 and exp
-  = E_Lit of lit
+  = E_Lit of lit stx
   | E_Var of string stx
+  | E_Rec of ((string stx) * exp) list stx
   | E_Ref of exp
   | E_Move of exp
   | E_Fieldof of exp * string stx
@@ -90,7 +91,7 @@ let rec get_string_stmt s =
 and get_string_exp e =
   let to_print =
     match e with
-    | E_Lit(l) -> get_string_lit l; ":lit "
+    | E_Lit(l) -> get_string_lit (snd l); ":lit "
     | E_Var(v) -> print_string (snd v); ":var "
     | E_Ref(e) -> get_string_exp e; ":ref "
     | E_Move(e) -> get_string_exp e; ":move "
@@ -105,6 +106,7 @@ and get_string_exp e =
                           ")"
     | E_UniOp(o,v) -> print_string " UniOp( ";
                       get_string_exp v; ")"
+    | E_Rec(l) -> " rec "
   in print_string to_print
 ;;
 

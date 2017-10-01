@@ -87,8 +87,9 @@ typ:
 /* Definition */
 exp:
 |        LPAREN e=exp RPAREN               { e }
-|        l=lit                             { E_Lit(l) }
+|        l=lit                             { E_Lit($startpos,l) }
 |        v=name                            { E_Var(v) }
+|        r=construct                       { E_Rec($startpos,r) }
 |        e=exp DOT n=name                  { E_Fieldof(e,n) }
 |        a=exp;
          LPAREN
@@ -133,6 +134,13 @@ stmt:
          e2=stmtblock;
          DSEMI                               { S_While(e1,e2) }
 |        EOL                                 { S_Nop }
+;
+
+construct:
+|       LSQUARE l=separated_list(COMMA,ass) RSQUARE  { l }
+;
+ass:
+|       n=name EQUAL e=exp                   { (n,e) }
 ;
 
 elif:

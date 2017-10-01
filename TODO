@@ -1,6 +1,6 @@
 TODO:
 	- Add pointers
-	- Add external C interface
+       *- Add external C interface
         - Generics
 	- Qualities
         - Move/Copy/MM
@@ -8,4 +8,5 @@ TODO:
 	- Recursive types
 	- Actually define language spec
 	- Traits
+        - Import/Libraries/Module system
 

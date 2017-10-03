@@ -70,11 +70,16 @@ let out_name =
 let macro_expand =
   let open File in
   let output = open_temporary_out ~prefix:"macro" ~suffix:"tmp.ql" () in
+  let path =
+    match (STR.rindex_opt to_compile '/') with
+    | None -> "./"
+    | Some(i) -> STR.left to_compile i in  
   let input = open_in (snd output) in
-  let result = Sys.command (Printf.sprintf "m4 %s > %s" to_compile (snd output)) in
+  
+  let result = Sys.command (Printf.sprintf "m4 -I %s %s > %s" path to_compile (snd output)) in
 
   if result <> 0 then
-    (Printf.printf "Error expanding macros! Reported %i" result; exit 1;)
+    (Printf.printf "Error expanding macros! Reported %i\n" result; exit 1;)
   else IO.close_out (fst output);
 
   input

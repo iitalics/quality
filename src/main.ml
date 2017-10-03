@@ -6,6 +6,7 @@ module STR = BatString
 
 let out_opt = OP.StdOpt.str_option ~metavar:"FILE" ()
 let compile_opt = OP.StdOpt.store_true ()
+let macro_opt = OP.StdOpt.store_false ()
 
 let optparser : OP.OptParser.t =
   OP.OptParser.make
@@ -25,6 +26,11 @@ let () =
     ~short_name:'c'
     ~long_name:"compile"
     compile_opt;
+  OP.OptParser.add optparser
+    ~help:"expand m4 macros"
+    ~short_name:'m'
+    ~long_name:"macros"
+    macro_opt;
 ;;
 
 let file =
@@ -35,6 +41,7 @@ let file =
            
             
 let compile_bool = OP.Opt.get compile_opt
+let macro_bool = OP.Opt.get macro_opt
 
 exception IncorrectFileName
 let out_name =
@@ -63,6 +70,15 @@ let read_surface input =
        (Lexing.lexeme lexbuf)
        (Lexing.lexeme_start lexbuf); exit 1
 
+let macro_expand file_name =
+  let open File in
+  let macro_out = open_temporary_out ~prefix:"macro" ~suffix:"tmp.ql" () in
+  let file_inp = open_in (snd macro_out) in
+  let result = Sys.command (Printf.sprintf "m4 %s > %s" file_name (snd macro_out)) in
+  if result <> 0
+  then (Printf.printf "Error expanding macros! Reported %i" result; exit 1;)
+  else (IO.close_out (fst macro_out); file_inp)
+;;
 
      
 let main input output_pair =
@@ -82,7 +98,9 @@ let main input output_pair =
 let () =
   let open File in
   let out_perm = perm [user_read;user_write;group_read;other_read] in
-  let inp = open_in file in
+  let inp = (if macro_bool
+             then macro_expand file
+             else open_in file) in
   let out = (if compile_bool
              then File.open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ~mode:[`create;`trunc;`delete_on_exit] ()
              else (open_out ~perm:out_perm out_name),out_name) in

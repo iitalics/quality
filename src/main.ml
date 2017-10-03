@@ -4,6 +4,9 @@ module OP = BatOptParse
 module S = BatSys
 module STR = BatString
 
+
+(******************* OPTS PARSING / CONFIG *******************)
+           
 let out_opt = OP.StdOpt.str_option ~metavar:"FILE" ()
 let compile_opt = OP.StdOpt.store_true ()
 let macro_opt = OP.StdOpt.store_false ()
@@ -27,13 +30,13 @@ let () =
     ~long_name:"compile"
     compile_opt;
   OP.OptParser.add optparser
-    ~help:"expand m4 macros"
+    ~help:"disable m4 macro expansion"
     ~short_name:'m'
-    ~long_name:"macros"
+    ~long_name:"no-macros"
     macro_opt;
 ;;
 
-let file =
+let to_compile =
   try
     BatList.hd (OP.OptParser.parse_argv optparser)
   with
@@ -44,19 +47,63 @@ let compile_bool = OP.Opt.get compile_opt
 let macro_bool = OP.Opt.get macro_opt
 
 exception IncorrectFileName
-let out_name =
-  let s = OP.Opt.opt out_opt in
+
+let generate_name =
   try
-    match s with
-    | None -> (let file_name = STR.rchop ~n:3 file in
-               let file_ext = STR.lchop ~n:((STR.length file) - 3) file in
-               if STR.equal file_ext ".ql" then STR.concat "." [file_name; "c"]
-               else raise IncorrectFileName)
-    | Some s -> s
-  with
-  | IncorrectFileName -> Printf.printf "Please give a valid source '.ql' file\n"; exit 1
+    let file_name = STR.rchop ~n:3 to_compile in
+    let file_ext = STR.lchop ~n:((STR.length to_compile) - 3) to_compile in
+    if STR.equal file_ext ".ql" then STR.concat "." [file_name; "c"]
+    else raise IncorrectFileName
+  with IncorrectFileName ->
+    Printf.printf "Please give a valid source '.ql' file\n"; exit 1
 ;;
 
+let out_name =
+  let s = OP.Opt.opt out_opt in
+  match s with
+  | None -> generate_name
+  | Some s -> s
+;;
+
+(******************* OPTS / FILE HANDLING *******************)
+
+let macro_expand =
+  let open File in
+  let output = open_temporary_out ~prefix:"macro" ~suffix:"tmp.ql" () in
+  let input = open_in (snd output) in
+  let result = Sys.command (Printf.sprintf "m4 %s > %s" to_compile (snd output)) in
+
+  if result <> 0 then
+    (Printf.printf "Error expanding macros! Reported %i" result; exit 1;)
+  else IO.close_out (fst output);
+
+  input
+;;
+
+let get_source_files =
+  let open File in
+  let out_perm = perm [user_read;user_write;group_read;other_read] in
+  let input  = (if macro_bool then macro_expand else (open_in to_compile)) in
+  let output = (if compile_bool then
+                  open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ()
+                else (open_out ~perm:out_perm out_name),out_name) in
+  (input, output)
+;;
+
+let compile_cc output =
+  let open Printf in
+  if compile_bool then begin
+      printf "Compiling...\n";
+      let result = Sys.command (sprintf "cc %s" output) in
+      printf "Completed with code %i\n" result
+    end
+  else begin
+      printf "Writing %s... \n" output;
+      printf "Completed!\n"
+    end
+;;
+
+(******************* MAIN / COMPILING *******************)
 
 let read_surface input =
   let lexbuf = Lexing.from_input input in
@@ -70,42 +117,20 @@ let read_surface input =
        (Lexing.lexeme lexbuf)
        (Lexing.lexeme_start lexbuf); exit 1
 
-let macro_expand file_name =
-  let open File in
-  let macro_out = open_temporary_out ~prefix:"macro" ~suffix:"tmp.ql" () in
-  let file_inp = open_in (snd macro_out) in
-  let result = Sys.command (Printf.sprintf "m4 %s > %s" file_name (snd macro_out)) in
-  if result <> 0
-  then (Printf.printf "Error expanding macros! Reported %i" result; exit 1;)
-  else (IO.close_out (fst macro_out); file_inp)
-;;
-
      
 let main input output_pair =
-  let open Printf in
   try
     Compile.do_compile (read_surface input) (fst output_pair);
-    if compile_bool
-    then (printf "Compiling...\n";
-          printf "Completed with code %i!\n" (Sys.command (sprintf "cc %s" (snd output_pair))))
-    else (printf "Writing %s... \n" (snd output_pair);
-          printf "Completed!\n")
+    IO.close_in input;
+    IO.close_out (fst output_pair);
+    compile_cc (snd output_pair);
   with Ast.AstError (pos, ex) ->
-    fprintf IO.stderr "ast error: %s\n"
-       (Ast.Exn.to_string ex)
+    Printf.fprintf IO.stderr "ast error: %s\n" (Ast.Exn.to_string ex)
 
 
 let () =
-  let open File in
-  let out_perm = perm [user_read;user_write;group_read;other_read] in
-  let inp = (if macro_bool
-             then macro_expand file
-             else open_in file) in
-  let out = (if compile_bool
-             then File.open_temporary_out ~prefix:"ir" ~suffix:"tmp.c" ~mode:[`create;`trunc;`delete_on_exit] ()
-             else (open_out ~perm:out_perm out_name),out_name) in
-  main inp out;
-  IO.close_in inp; IO.close_out (fst out)
+  let source = get_source_files in
+  main (fst source) (snd source);
 ;;
   
     

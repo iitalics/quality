@@ -8,5 +8,6 @@ TODO:
 	- Recursive types
 	- Actually define language spec
 	- Traits
+	- Official m4 support
         - Import/Libraries/Module system
 

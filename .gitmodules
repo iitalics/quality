@@ -1,0 +1,3 @@
+[submodule "stdlib"]
+	path = stdlib
+	url = git@gitlab.com:quality-language/quality-stdlib.git

@@ -26,6 +26,7 @@ let builtin_unit = Con "unit"
 let builtin_bool = Con "bool"
 let builtin_int = Con "int"
 let builtin_str = Con "str"
+let builtin_double = Con "double"
 
 
 type type_repr

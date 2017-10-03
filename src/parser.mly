@@ -7,6 +7,7 @@ open Ast_surface
 
 %token TRUE FALSE UNIT
 %token <int> INT
+%token <float> DOUBLE
 %token <string> STR
 
 /* Keywords */
@@ -162,6 +163,7 @@ stmtblock:
 lit:
 |        i=INT                               { L_Int(i) }
 |        s=STR                               { L_Str(s) }
+|        f=DOUBLE                            { L_Double(f) }
 |        b=TRUE                              { L_True }
 |        b=FALSE                             { L_False }
 |        LPAREN RPAREN                       { L_Unit }

@@ -50,6 +50,7 @@ and ('var, 'nfo) path
 and lit = L_Unit | L_True | L_False
           | L_Int of int
           | L_String of string
+          | L_Double of float
 
 type info_none = [ `No_info ]
 

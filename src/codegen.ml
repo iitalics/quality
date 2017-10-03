@@ -178,7 +178,8 @@ and codegen_exp : generate
       | L_False -> "0"
       | L_True  -> "1"
       | L_Unit  -> "0"
-      | L_Int n -> Printf.sprintf "0x%x" n
+      | L_Int n -> Printf.sprintf "%i" n
+      | L_Double n -> Printf.sprintf "%f" n
       | L_String s ->
          String.enum s
          /@ (fun c -> Printf.sprintf "\\x%02x"

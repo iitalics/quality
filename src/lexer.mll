@@ -41,6 +41,9 @@ rule token = parse
     | false              { FALSE }
     (* | unit               { UNIT } *)
     | num as lxm         { INT(int_of_string lxm) }
+    | '-' num as lxm     { INT(int_of_string lxm) }
+    | num '.' num as lxm { DOUBLE(float_of_string lxm) }
+    | '-' num '.' num as lxm { DOUBLE(float_of_string lxm) }
     | '"'                { read_string (Buffer.create 17) lexbuf }
 
     (* Keywords *)

@@ -1,92 +1,82 @@
 {
-   exception Eof
+   open Batteries
+   open Parser
 
-   type token =
-        (* Built-in literals *)
-        | TRUE
-        | FALSE
-        | INT of int
-        | STR of string
-        (* Keywords *)
-        | TYPE
-        | AND
-        | WHERE
-        | IF
-        | ELIF
-        | ELSE
-        | WHILE
-        (* BRACKETS *)
-        | LPAREN
-        | RPAREN
-        | LANGLE
-        | RANGLE
-        | LSQUARE
-        | RSQUARE
-        | VERTB
-        (* PUNCTUATION *)
-        | COMMA
-        | COLON
-        | ARROW
-        | SEMI
-        | EOL
-        | DSEMI
-        (* ASSIGNMENT *)
-        | EQUAL
-        (* ARITHMETIC *)
-        | PLUS
-        | MINUS
-        | DIV
-        | MULTI
-        (* VARIABLES *)
-        | ID of string
-        (* FILE MARKERS *)
-        | EOF
-   ;;
+   exception Error of int
+   exception StringLitError of int
 }
+
+let white = [' ' '\t']
+
+(* Literals *)
+let true  = "true"  | "TRUE"  | "True"
+let false = "false" | "FALSE" | "False"
+let unit  = "unit"  | "UNIT"  | "Unit"
+let num   = ['0'-'9']+
+
+(* Keywords *)
+let typ   = "type"  | "TYPE"  | "Type"
+let andy  = "and"   | "AND"   | "And"
+let where = "where" | "WHERE" | "Where"
+let if    = "if"    | "IF"    | "If"
+let elif  = "elif"  | "ELIF"  | "Elif"
+let else  = "else"  | "ELSE"  | "Else"
+let while = "while" | "WHILE" | "While"
+let var   = "var"   | "VAR"   | "Var"
+let fun   = "fun"   | "FUN"   | "Fun"
+let ass   = "as"    | "AS"    | "As"
+let ext   = "external" | "EXTERNAL" | "External"
+
+(* Variables *)
+
+let id    = ['a'-'z''A'-'Z'] ['a'-'z''A'-'Z''0'-'9']*
+
+(*************************************************************************)
 
 rule token = parse
       [' ' '\t']         { token lexbuf }        (* skip blanks *)
 
     (* Literals *)
-    | "true" | "TRUE" | "True"
-                         { TRUE }
-    | "false" | "FALSE" | "False"
-                         { FALSE }               (* Boolean literals *)
-    | ['0'-'9']+ as lxm  { INT(int_of_string lxm) }
-    | '"' _* '"' as lxm  { STR(lxm) }            (* String literals between any "" *)
+    | true               { TRUE }
+    | false              { FALSE }
+    (* | unit               { UNIT } *)
+    | num as lxm         { INT(int_of_string lxm) }
+    | '"'                { read_string (Buffer.create 17) lexbuf }
 
     (* Keywords *)
-    | "type" | "TYPE" | "Type"
-                         { TYPE }                (* Type declaration *)
-    | "and" | "AND" | "And"
-                         { AND }
-    | "where" | "WHERE" | "Where"
-                         { WHERE }               (* Information appendage *)
-    | "if" | "IF" | "If"
-                         { IF }                  (* If block *)
-    | "elif" | "ELIF" | "Elif"
-                         { ELIF }                (* elif block *)
-    | "else" | "ELSE" | "Else"
-                         { ELSE }                (* else block *)
-    | "while" | "WHILE" | "While"
-                         { WHILE }               (* while block *)
+    | typ                { TYPE }                (* Type declaration *)
+    | andy                { AND }
+    | where              { WHERE }               (* Information appendage *)
+    | if                 { IF }                  (* If block *)
+    | elif               { ELIF }                (* elif block *)
+    | else               { ELSE }                (* else block *)
+    | while              { WHILE }               (* while block *)
+    | var                { VAR }
+    | fun                { FUN }
+    | ass                { AS }
+    | ext                { EXT }
 
     (* Brackets *)
     | '('                { LPAREN }              (* Function application/Creation *)
     | ')'                { RPAREN }
     | '<'                { LANGLE }              (* 'Generic' braces *)
     | '>'                { RANGLE }
-    | '['                { LANGLE }              (* Arracy braces *)
-    | ']'                { RANGLE }
+    | '['                { LSQUARE }              (* Arracy braces *)
+    | ']'                { RSQUARE }
     | '|'                { VERTB }               (* Quality indicator *)
+    | '{'                { LCURL }
+    | '}'                { RCURL }
 
     (* Punctuation *)
     | ','                { COMMA }
     | ':'                { COLON }
     | "->"               { ARROW }
-    | ';'                { SEMI }
+    | '.'                { DOT }
+    | '&'                { REF }
+    | ';'                { EOL }
     | ['\n']             { EOL }                 (* new lines *)
     | ";;"               { DSEMI }               (* end codeblock *)
+    | '!'                { NOT }
 
     (* Assignment *)
     | '='                { EQUAL }
@@ -97,10 +87,34 @@ rule token = parse
     | '/'                { DIV }
     | '*'                { MULTI }
 
+    (* Comparison *)
+    | "=="               { EQL }
+    | ">="               { GTE }
+    | "<="               { LTE }
+    | "!="               { NEQ }
+    | "&&"               { LAND }
+    | "||"               { LOR }
+
     (* Variables *)
-    | ['a'-'z''A'-'Z'] ['a'-'z''A'-'Z''0'-'9']* as lxm
-                         { ID(lxm) }
+    | id as lxm          { ID(lxm) }
 
     (* File marker *)
-    | eof                { raise Eof }
+    | eof                { EOF }
 
+    | _                  { raise (Error (Lexing.lexeme_start lexbuf)) }
+
+and read_string buf = parse
+    | '"'       { STR (Buffer.contents buf) }
+    | '\\' '/'  { Buffer.add_char buf '/'; read_string buf lexbuf }
+    | '\\' '\\' { Buffer.add_char buf '\\'; read_string buf lexbuf }
+    | '\\' 'b'  { Buffer.add_char buf '\b'; read_string buf lexbuf }
+    | '\\' 'f'  { Buffer.add_char buf '\012'; read_string buf lexbuf }
+    | '\\' 'n'  { Buffer.add_char buf '\n'; read_string buf lexbuf }
+    | '\\' 'r'  { Buffer.add_char buf '\r'; read_string buf lexbuf }
+    | '\\' 't'  { Buffer.add_char buf '\t'; read_string buf lexbuf }
+    | [^ '"' '\\']+
+      { Buffer.add_string buf (Lexing.lexeme lexbuf);
+        read_string buf lexbuf
+      }
+    | _ { raise (StringLitError (Lexing.lexeme_start lexbuf)) }
+    | eof { raise (StringLitError (Lexing.lexeme_start lexbuf)) }

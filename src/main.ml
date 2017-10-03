@@ -7,9 +7,10 @@ module STR = BatString
 
 (******************* OPTS PARSING / CONFIG *******************)
            
-let out_opt = OP.StdOpt.str_option ~metavar:"FILE" ()
-let compile_opt = OP.StdOpt.store_true ()
-let macro_opt = OP.StdOpt.store_false ()
+let out_opt = OP.StdOpt.str_option ~metavar:"FILE" ();;
+let m4I_opt = OP.StdOpt.str_option ~metavar:"PATH" ();;
+let compile_opt = OP.StdOpt.store_true ();;
+let macro_opt = OP.StdOpt.store_false ();;
 
 let optparser : OP.OptParser.t =
   OP.OptParser.make
@@ -34,6 +35,11 @@ let () =
     ~short_name:'m'
     ~long_name:"no-macros"
     macro_opt;
+  OP.OptParser.add optparser
+    ~help:"include paths"
+    ~short_name:'I'
+    ~long_name:"include"
+    m4I_opt;
 ;;
 
 let to_compile =
@@ -45,9 +51,10 @@ let to_compile =
             
 let compile_bool = OP.Opt.get compile_opt
 let macro_bool = OP.Opt.get macro_opt
+let m4I_path = OP.Opt.get m4I_opt
 
+               
 exception IncorrectFileName
-
 let generate_name =
   try
     let file_name = STR.rchop ~n:3 to_compile in
@@ -76,7 +83,8 @@ let macro_expand =
     | Some(i) -> STR.left to_compile i in  
   let input = open_in (snd output) in
   
-  let result = Sys.command (Printf.sprintf "m4 -I %s %s > %s" path to_compile (snd output)) in
+  let result = Sys.command (Printf.sprintf "m4 -I %s -I %s %s > %s"
+                              path m4I_path to_compile (snd output)) in
 
   if result <> 0 then
     (Printf.printf "Error expanding macros! Reported %i\n" result; exit 1;)

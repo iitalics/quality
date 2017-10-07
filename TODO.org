@@ -1,0 +1,17 @@
+* Main language
+** STARTED Rewrite backend
+** STARTED Modularize
+** TODO Add pointers
+** STARTED Add external C interface
+*** DONE "external" keyword
+    CLOSED: [2017-10-06 Fri 20:43]
+*** STARTED Q-types -> C-types conversion
+** TODO Generics
+** IDEA Qualities
+** TODO Move/Copy/MM
+** TODO Closures
+** TODO Recursive types
+** TODO Define language specification
+** TODO Traits
+** TODO Official m4 support
+** IDEA Modules system
